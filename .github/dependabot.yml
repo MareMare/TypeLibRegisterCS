@@ -7,7 +7,7 @@ version: 2
 updates:
   # nuget の依存関係を維持します。
   - package-ecosystem: "nuget" # See documentation for possible values
-    directory: "/" # Location of package manifests
+    directory: "/src/TypeLibRegisterCS/" # Location of package manifests
     schedule:
       interval: "daily"
       # 日本標準時 (UTC +09:00) に nuget の更新をチェックします。
