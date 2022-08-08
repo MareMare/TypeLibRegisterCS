@@ -1,48 +1,20 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{1BB8F054-D46F-4F2E-B1CC-D2924CBB8BDF}</ProjectGuid>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TypeLibRegisterCS</RootNamespace>
-    <AssemblyName>TypeLibRegisterCS</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
     <ApplicationIcon>TypeLibRegisterCS.ico</ApplicationIcon>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>TypeLibRegisterCS.snk</AssemblyOriginatorKeyFile>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <TargetFrameworkProfile />
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\TypeLibRegisterCS.XML</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\TypeLibRegisterCS.XML</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.ExceptionMessageBox, Version=10.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
@@ -50,131 +22,36 @@
       <HintPath>.\Microsoft.ExceptionMessageBox.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.configuration" />
-    <Reference Include="System.Core">
+    <Reference Update="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Runtime.Serialization">
+    <Reference Update="System.Runtime.Serialization">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Xml.Linq">
+    <Reference Update="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Data.DataSetExtensions">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Configurations\FilterItem.cs" />
-    <Compile Include="Configurations\ISerializableConfiguration.cs" />
-    <Compile Include="Configurations\SerializableConfiguration.cs" />
-    <Compile Include="Configurations\SerializableConfigurationAttribute.cs" />
-    <Compile Include="Configurations\SerializableConfigurationException.cs" />
-    <Compile Include="Configurations\TypeLibRegisterConfiguration.cs" />
-    <Compile Include="Entities\ClassIdentifier.cs" />
-    <Compile Include="Entities\ExportedTypeLibInformation.cs" />
-    <Compile Include="Entities\InterfaceIdentifier.cs" />
-    <Compile Include="Entities\MachineInformation.cs" />
-    <Compile Include="Entities\TypeLibIdentifier.cs" />
-    <Compile Include="Extensions\EntryPoint.cs" />
-    <Compile Include="Extensions\AnonymousComparer.cs" />
-    <Compile Include="Extensions\CommandLink.cs">
+    <Compile Update="Extensions\CommandLink.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Extensions\CommandLink.Designer.cs">
-      <DependentUpon>CommandLink.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Extensions\EnumerableExtensions.cs" />
-    <Compile Include="Extensions\EqualityComparerHelper.cs" />
-    <Compile Include="Extensions\ExpandableObjectConverterBridge.cs" />
-    <Compile Include="Extensions\ThreadExceptionDetectedEventArgs.cs" />
-    <Compile Include="Extensions\ThreadExceptionDialogResultEventArgs.cs" />
-    <Compile Include="Extensions\VerticalAlign.cs" />
-    <Compile Include="GlobalAssemblyInfo.cs" />
-    <Compile Include="Guard.cs" />
-    <Compile Include="MainForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Extensions\CommandLink.resx">
-      <DependentUpon>CommandLink.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <None Include="Resources\arrow_right_green.png" />
-    <None Include="Resources\delete.png" />
-    <None Include="Resources\error.png" />
-    <None Include="Resources\FloppyDisk.png" />
-    <None Include="Resources\info.png" />
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-    <Compile Include="Serialization\ISerializerHelper.cs" />
-    <Compile Include="Serialization\SerializerCache.cs" />
-    <Compile Include="Serialization\SerializerException.cs" />
-    <Compile Include="Serialization\SerializerFactory.cs" />
-    <Compile Include="Serialization\SerializerMode.cs" />
-    <Compile Include="Serialization\StreamAsyncHelper.cs" />
-    <Compile Include="Serialization\XmlSerializerHelper.cs" />
-    <Compile Include="TypeLibCollector.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Network.png" />
-    <None Include="Resources\Warning.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\refresh.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="Resources\TypeLibRegister.png" />
-    <None Include="TypeLibRegisterCS.config">
+    <None Update="TypeLibRegisterCS.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="TypeLibRegisterCS.snk" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Progress100.gif" />
-    <None Include="Resources\PendingRequest_48x48_72.png" />
+    <Content Include="appsettings.json" />
     <Content Include="TypeLibRegisterCS.ico" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.336902">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
+  </ItemGroup>
+  <PropertyGroup />
 </Project>
