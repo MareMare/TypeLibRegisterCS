@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,24 +28,26 @@ namespace TypeLibRegisterCS.Configurations
         where T : class, ISerializableConfiguration
     {
         /// <summary>静的メンバへアクセスする際のロックオブジェクトです。</summary>
-        private static readonly object syncRoot = new object();
+        // ReSharper disable once StaticMemberInGenericType
+        private static readonly object SyncRoot = new object();
 
         /// <summary>キーに関連付けられている構成定義データコントラクトインスタンスのマッピングを表します。</summary>
-        private static readonly Dictionary<SerializableConfigurationAttribute, T> configurations = new Dictionary<SerializableConfigurationAttribute, T>();
+        private static readonly Dictionary<SerializableConfigurationAttribute, T> Configurations
+            = new Dictionary<SerializableConfigurationAttribute, T>();
 
         /// <summary>
         /// エントリポイントを有するアセンブリが格納されているフォルダを取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>エントリポイントを有するアセンブリが格納されているフォルダ。</para>
         /// </value>
         private static string EntryAssemblyFolder
         {
             get
             {
-                Assembly executingAssembly = Assembly.GetEntryAssembly();
-                return Path.GetDirectoryName(new Uri(executingAssembly.EscapedCodeBase).LocalPath);
+                var executingAssembly = Assembly.GetEntryAssembly();
+                return Path.GetDirectoryName(executingAssembly?.Location ?? string.Empty);
             }
         }
 
@@ -58,10 +59,8 @@ namespace TypeLibRegisterCS.Configurations
         /// <exception cref="SerializableConfigurationException">構成ファイルの読み込み中に例外が発生しました。</exception>
         /// <exception cref="SerializableConfigurationException">アプリケーション構成ファイルに構成ファイルの定義がありません。</exception>
         /// <exception cref="SerializableConfigurationException">構成定義データコントラクトインスタンスの検証で違反を検出しました。</exception>
-        public static T GetInstance()
-        {
-            return SerializableConfiguration<T>.GetInstanceBy(() => SerializableConfiguration<T>.GetAttribute());
-        }
+        public static T GetInstance() =>
+            SerializableConfiguration<T>.GetInstanceBy(SerializableConfiguration<T>.GetAttribute);
 
         /// <summary>
         /// 構成ファイルのパスを指定して構成定義データコントラクトインスタンスを取得します。
@@ -72,9 +71,8 @@ namespace TypeLibRegisterCS.Configurations
         /// <exception cref="SerializableConfigurationException">構成ファイルの読み込み中に例外が発生しました。</exception>
         /// <exception cref="SerializableConfigurationException">アプリケーション構成ファイルに構成ファイルの定義がありません。</exception>
         /// <exception cref="SerializableConfigurationException">構成定義データコントラクトインスタンスの検証で違反を検出しました。</exception>
-        public static T GetInstanceByFilePath(string filepath)
-        {
-            return SerializableConfiguration<T>.GetInstanceBy(() =>
+        public static T GetInstanceByFilePath(string filepath) =>
+            SerializableConfiguration<T>.GetInstanceBy(() =>
             {
                 var attribute = SerializableConfiguration<T>.GetAttribute();
                 var pseudoAttribute = new SerializableConfigurationAttribute(attribute.Mode)
@@ -84,7 +82,6 @@ namespace TypeLibRegisterCS.Configurations
                 };
                 return pseudoAttribute;
             });
-        }
 
         /// <summary>
         /// アプリケーション設定のキー名 (appSettings/add/@key の値) を指定して構成定義データコントラクトインスタンスを取得します。
@@ -95,9 +92,8 @@ namespace TypeLibRegisterCS.Configurations
         /// <exception cref="SerializableConfigurationException">構成ファイルの読み込み中に例外が発生しました。</exception>
         /// <exception cref="SerializableConfigurationException">アプリケーション構成ファイルに構成ファイルの定義がありません。</exception>
         /// <exception cref="SerializableConfigurationException">構成定義データコントラクトインスタンスの検証で違反を検出しました。</exception>
-        public static T GetInstanceByAppSettingKey(string appSettingKey)
-        {
-            return SerializableConfiguration<T>.GetInstanceBy(() =>
+        public static T GetInstanceByAppSettingKey(string appSettingKey) =>
+            SerializableConfiguration<T>.GetInstanceBy(() =>
             {
                 var attribute = SerializableConfiguration<T>.GetAttribute();
                 var pseudoAttribute = new SerializableConfigurationAttribute(attribute.Mode)
@@ -107,6 +103,20 @@ namespace TypeLibRegisterCS.Configurations
                 };
                 return pseudoAttribute;
             });
+
+        /// <summary>
+        /// 現在のインスタンスを構成ファイルとして保存します。
+        /// </summary>
+        /// <param name="instanceToSave">保存する T インスタンス。</param>
+        [Conditional("DEBUG")]
+        public static void Save(T instanceToSave)
+        {
+            var attribute = SerializableConfiguration<T>.GetAttribute();
+            if (SerializableConfiguration<T>.TryGetFilePath(attribute, out var filepath))
+            {
+                var serializer = SerializerFactory.CreateSerializer(attribute.Mode);
+                serializer.Save(filepath, instanceToSave);
+            }
         }
 
         /// <summary>
@@ -116,14 +126,19 @@ namespace TypeLibRegisterCS.Configurations
         /// <exception cref="SerializableConfigurationException">指定された型に SerializableConfigurationAttribute 属性が付与されていません。</exception>
         private static SerializableConfigurationAttribute GetAttribute()
         {
-            SerializableConfigurationAttribute attribute = null;
+            SerializableConfigurationAttribute attribute;
             try
             {
-                attribute = TypeDescriptor.GetAttributes(typeof(T)).OfType<SerializableConfigurationAttribute>().First();
+                attribute = TypeDescriptor.GetAttributes(typeof(T)).OfType<SerializableConfigurationAttribute>()
+                    .First();
             }
             catch (Exception ex)
             {
-                throw new SerializableConfigurationException(ex, "指定された型 '{0}' に '{1}' 属性が付与されていません。", typeof(T).Name, typeof(SerializableConfigurationAttribute).Name);
+                throw new SerializableConfigurationException(
+                    ex,
+                    "指定された型 '{0}' に '{1}' 属性が付与されていません。",
+                    typeof(T).Name,
+                    nameof(SerializableConfigurationAttribute));
             }
 
             return attribute;
@@ -137,16 +152,16 @@ namespace TypeLibRegisterCS.Configurations
         [DebuggerStepThrough]
         private static T GetInstanceBy(Func<SerializableConfigurationAttribute> getAttribute)
         {
-            lock (SerializableConfiguration<T>.syncRoot)
+            lock (SerializableConfiguration<T>.SyncRoot)
             {
                 var attribute = getAttribute();
-                if (!SerializableConfiguration<T>.configurations.ContainsKey(attribute))
+                if (!SerializableConfiguration<T>.Configurations.ContainsKey(attribute))
                 {
                     var config = SerializableConfiguration<T>.LoadOrCreateByAttribute(attribute);
-                    SerializableConfiguration<T>.configurations.Add(attribute, config);
+                    SerializableConfiguration<T>.Configurations.Add(attribute, config);
                 }
 
-                return SerializableConfiguration<T>.configurations[attribute];
+                return SerializableConfiguration<T>.Configurations[attribute];
             }
         }
 
@@ -160,9 +175,8 @@ namespace TypeLibRegisterCS.Configurations
         /// <exception cref="SerializableConfigurationException">構成定義データコントラクトインスタンスの検証で違反を検出しました。</exception>
         private static T LoadOrCreateByAttribute(SerializableConfigurationAttribute attribute)
         {
-            T config = null;
-            string filepath = string.Empty;
-            if (SerializableConfiguration<T>.TryGetFilePath(attribute, out filepath))
+            T config;
+            if (SerializableConfiguration<T>.TryGetFilePath(attribute, out var filepath))
             {
                 try
                 {
@@ -213,7 +227,7 @@ namespace TypeLibRegisterCS.Configurations
         private static T CreateAsEmpty()
         {
             var config = (T)Activator.CreateInstance(typeof(T), true);
-            config.ConstructAsEmpty();
+            config!.ConstructAsEmpty();
             return config;
         }
 
@@ -227,7 +241,7 @@ namespace TypeLibRegisterCS.Configurations
         {
             filepath = string.Empty;
 
-            string configurationFilePath = attribute.ResolveFilePath();
+            var configurationFilePath = attribute.ResolveFilePath();
             if (string.IsNullOrEmpty(configurationFilePath))
             {
                 return false;
@@ -250,7 +264,7 @@ namespace TypeLibRegisterCS.Configurations
         /// <returns>読み込まれたインスタンス。</returns>
         private static T Load(SerializableConfigurationAttribute attribute, string filepath)
         {
-            ISerializerHelper serializer = SerializerFactory.CreateSerializer(attribute.Mode);
+            var serializer = SerializerFactory.CreateSerializer(attribute.Mode);
             var config = serializer.Load<T>(filepath);
             return config;
         }
@@ -264,22 +278,6 @@ namespace TypeLibRegisterCS.Configurations
         {
             Guard.ArgumentNotNull(config, "config");
             config.Validate();
-        }
-
-        /// <summary>
-        /// 現在のインスタンスを構成ファイルとして保存します。
-        /// </summary>
-        /// <param name="instanceToSave">保存する T インスタンス。</param>
-        [Conditional("DEBUG")]
-        public static void Save(T instanceToSave)
-        {
-            string filepath = string.Empty;
-            var attribute = SerializableConfiguration<T>.GetAttribute();
-            if (SerializableConfiguration<T>.TryGetFilePath(attribute, out filepath))
-            {
-                ISerializerHelper serializer = SerializerFactory.CreateSerializer(attribute.Mode);
-                serializer.Save(filepath, instanceToSave);
-            }
         }
     }
 }

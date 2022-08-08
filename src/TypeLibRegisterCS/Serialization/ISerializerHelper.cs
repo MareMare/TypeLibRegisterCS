@@ -7,7 +7,6 @@
 
 #region References
 
-using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 #endregion

@@ -25,8 +25,9 @@ namespace TypeLibRegisterCS.Configurations
     /// <para>このクラスで ObjectHelper を呼び出すことは禁止です。スタックオーバフローとなり異常終了してしまいます。</para>
     /// </summary>
     [Serializable]
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    [DebuggerDisplay("Mode={Mode}, FilePath={FilePath}, AppSettingKey={AppSettingKey}, ExternalSettingKey={ExternalSettingKey}, ThrowIfEmpty={ThrowIfEmpty}")]
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    [DebuggerDisplay(
+        "Mode={Mode}, FilePath={FilePath}, AppSettingKey={AppSettingKey}, ThrowIfEmpty={ThrowIfEmpty}")]
     public sealed class SerializableConfigurationAttribute : Attribute, IEquatable<SerializableConfigurationAttribute>
     {
         /// <summary>
@@ -60,105 +61,60 @@ namespace TypeLibRegisterCS.Configurations
         /// シリアル化を行う方法 を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="SerializerMode"/> 型。
+        /// 値を表す<see cref="SerializerMode" /> 型。
         /// <para>シリアル化を行う方法。既定値は SerializerMode.None です。</para>
         /// </value>
-        public SerializerMode Mode
-        {
-            get;
-            private set;
-        }
+        public SerializerMode Mode { get; private set; }
 
         /// <summary>
         /// 構成ファイルのパス を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>構成ファイルのパス。既定値は string.Empty です。</para>
         /// </value>
-        public string FilePath
-        {
-            get;
-            set;
-        }
+        public string FilePath { get; set; }
 
         /// <summary>
         /// アプリケーション設定のキー名 (appSettings/add/@key の値) を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>アプリケーション設定のキー名 (appSettings/add/@key の値)。既定値は string.Empty です。</para>
         /// </value>
-        public string AppSettingKey
-        {
-            get;
-            set;
-        }
+        public string AppSettingKey { get; set; }
 
         /// <summary>
         /// 空の定義として構築をせずに例外を発生させるか を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="bool"/> 型。
+        /// 値を表す<see cref="bool" /> 型。
         /// <para>空の定義として構築をせずに例外を発生させる場合は true。既定値は false です。</para>
         /// </value>
-        public bool ThrowIfEmpty
-        {
-            get;
-            set;
-        }
+        public bool ThrowIfEmpty { get; set; }
 
         /// <summary>
         /// 対象の型のキーとなるオブジェクトを取得するメソッドのデリゲート を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Action&lt;T1, T2&gt;"/> 型。
+        /// 値を表す<see cref="Action&lt;T1, T2&gt;" /> 型。
         /// <para>対象の型のキーとなるオブジェクトを取得するメソッドのデリゲート。既定値は null です。</para>
         /// </value>
-        private Action<SerializableConfigurationAttribute, ICollection<object>> KeysFactory
-        {
-            get;
-            set;
-        }
+        private Action<SerializableConfigurationAttribute, ICollection<object>> KeysFactory { get; }
 
         /// <summary>
         /// 指定した Object が、現在の Object と等しいかどうかを判断します。
         /// </summary>
         /// <param name="obj">現在の Object と比較する Object。</param>
         /// <returns>指定した Object が現在の Object と等しい場合は true。それ以外の場合は false。</returns>
-        public override bool Equals(object obj)
-        {
-            return ((IEquatable<SerializableConfigurationAttribute>)this).Equals(obj as SerializableConfigurationAttribute);
-        }
-
-        /// <summary>
-        /// 指定した Object インスタンスが等しいかどうかを判断します。
-        /// </summary>
-        /// <param name="obj">現在の Object と比較する Object。</param>
-        /// <returns>指定した Object が現在の Object と等しい場合は true。それ以外の場合は false。</returns>
-        bool IEquatable<SerializableConfigurationAttribute>.Equals(SerializableConfigurationAttribute obj)
-        {
-            return EqualityComparerHelper.Equals(this, obj, this.KeysFactory);
-        }
+        public override bool Equals(object obj) =>
+            ((IEquatable<SerializableConfigurationAttribute>)this).Equals(obj as SerializableConfigurationAttribute);
 
         /// <summary>
         /// 特定の型のハッシュ関数として機能します。
         /// </summary>
         /// <returns>現在の System.Object のハッシュコード。</returns>
-        public override int GetHashCode()
-        {
-            return EqualityComparerHelper.GetHashCode(this, this.KeysFactory);
-        }
-
-        /// <summary>
-        /// 現在の Object を表す String を返します。
-        /// </summary>
-        /// <returns>現在の Object を表す String。</returns>
-        public override string ToString()
-        {
-            //return ObjectHelper<SerializableConfigurationAttribute>.ToString(this);
-            return base.ToString();
-        }
+        public override int GetHashCode() => EqualityComparerHelper.GetHashCode(this, this.KeysFactory);
 
         /// <summary>
         /// 現在のインスタンスで構成ファイルのパスを解決します。
@@ -175,13 +131,21 @@ namespace TypeLibRegisterCS.Configurations
             {
                 var appSettings = ConfigurationManager.AppSettings;
                 filepath = appSettings.Keys.OfType<string>()
-                    .Where((key) => key == this.AppSettingKey)
-                    .Select((key) => appSettings[key])
-                    .FirstOrDefault()
-                    ?? string.Empty;
+                               .Where(key => key == this.AppSettingKey)
+                               .Select(key => appSettings[key])
+                               .FirstOrDefault()
+                           ?? string.Empty;
             }
-            
+
             return filepath;
         }
+
+        /// <summary>
+        /// 指定した Object インスタンスが等しいかどうかを判断します。
+        /// </summary>
+        /// <param name="obj">現在の Object と比較する Object。</param>
+        /// <returns>指定した Object が現在の Object と等しい場合は true。それ以外の場合は false。</returns>
+        bool IEquatable<SerializableConfigurationAttribute>.Equals(SerializableConfigurationAttribute obj) =>
+            EqualityComparerHelper.Equals(this, obj, this.KeysFactory);
     }
 }

@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 #endregion
@@ -29,11 +28,11 @@ namespace TypeLibRegisterCS.Extensions
         /// <returns>IComparer&lt;T&gt; インターフェイスを実装した匿名インスタンス。</returns>
         public static IComparer<T> Create<T>(params Func<T, T, int>[] compares)
         {
-            Func<T, T, int> allCompare = (x, y) =>
+            int AllCompare(T x, T y)
             {
                 foreach (var compare in compares)
                 {
-                    int compared = new Comparer<T>(compare).Compare(x, y);
+                    var compared = new Comparer<T>(compare).Compare(x, y);
                     if (compared != 0)
                     {
                         return compared;
@@ -41,8 +40,9 @@ namespace TypeLibRegisterCS.Extensions
                 }
 
                 return 0;
-            };
-            return new Comparer<T>(allCompare);
+            }
+
+            return new Comparer<T>(AllCompare);
         }
 
         /// <summary>
@@ -67,10 +67,10 @@ namespace TypeLibRegisterCS.Extensions
         {
             Action<T, ICollection<object>> keysFactory = (item, keys) =>
             {
-                var query = typeof(T).GetProperties().Select((info) => info.GetValue(item, null));
+                var query = typeof(T).GetProperties().Select(info => info.GetValue(item, null));
                 query.ForEach((key, index) => keys.Add(key));
             };
-            return AnonymousComparer.Create<T>(keysFactory);
+            return AnonymousComparer.Create(keysFactory);
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace TypeLibRegisterCS.Extensions
             Guard.ArgumentNotNull(keysFactory, "keysFactory");
             return new EqualityComparer<T>(
                 (x, y) => EqualityComparerHelper.Equals(x, y, keysFactory),
-                (obj) => EqualityComparerHelper.GetHashCode(obj, keysFactory));
+                obj => EqualityComparerHelper.GetHashCode(obj, keysFactory));
         }
 
         /// <summary>
@@ -111,10 +111,7 @@ namespace TypeLibRegisterCS.Extensions
             /// <param name="x">比較対象の第 1 オブジェクト。</param>
             /// <param name="y">比較対象の第 2 オブジェクト。</param>
             /// <returns>x が y より小さい場合は 0 より小さい値。x と y は等しい場合は 0。x が y より大きい場合は 0 より大きい値。</returns>
-            public int Compare(T x, T y)
-            {
-                return this.compare(x, y);
-            }
+            public int Compare(T x, T y) => this.compare(x, y);
         }
 
         /// <summary>
@@ -146,20 +143,14 @@ namespace TypeLibRegisterCS.Extensions
             /// <param name="x">比較対象の T 型の第 1 オブジェクト。</param>
             /// <param name="y">比較対象の T 型の第 2 オブジェクト。</param>
             /// <returns>指定したオブジェクトが等しい場合は true。それ以外の場合は false。</returns>
-            public bool Equals(T x, T y)
-            {
-                return this.equals(x, y);
-            }
+            public bool Equals(T x, T y) => this.equals(x, y);
 
             /// <summary>
             /// 指定したオブジェクトのハッシュ コードを返します。
             /// </summary>
             /// <param name="obj">ハッシュ コードが返される対象の Object。</param>
             /// <returns>指定したオブジェクトのハッシュ コード。</returns>
-            public int GetHashCode(T obj)
-            {
-                return this.getHashCode(obj);
-            }
+            public int GetHashCode(T obj) => this.getHashCode(obj);
         }
     }
 }

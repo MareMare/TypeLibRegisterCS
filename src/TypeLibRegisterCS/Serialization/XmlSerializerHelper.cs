@@ -29,16 +29,6 @@ namespace TypeLibRegisterCS.Serialization
         }
 
         /// <summary>
-        /// 指定した型のオブジェクトを XML ドキュメントにシリアル化したり、XML ドキュメントを指定した型のオブジェクトに逆シリアル化したりできる、XmlSerializer クラスの新しいインスタンスを生成します。
-        /// </summary>
-        /// <param name="type">XmlSerializer がシリアル化できるオブジェクトの型。</param>
-        /// <returns>生成された XmlSerializer。</returns>
-        private static XmlSerializer Create(Type type)
-        {
-            return new XmlSerializer(type);
-        }
-
-        /// <summary>
         /// 指定した Object をシリアル化し、指定したファイルに XML ドキュメントとして書き込みます。
         /// filePath に指定されたフォルダが存在しない場合は新規に生成します。
         /// </summary>
@@ -47,8 +37,8 @@ namespace TypeLibRegisterCS.Serialization
         /// <exception cref="SerializerException"></exception>
         public void Save(string filePath, object value)
         {
-            Func<object, XmlDocument> serialize = (graph) => this.Serialize(graph);
-            SerializerCache<XmlSerializer>.Save(filePath, value, serialize);
+            XmlDocument SerializeCore(object graph) => this.Serialize(graph);
+            SerializerCache<XmlSerializer>.Save(filePath, value, SerializeCore);
         }
 
         /// <summary>
@@ -60,8 +50,8 @@ namespace TypeLibRegisterCS.Serialization
         /// <exception cref="SerializerException"></exception>
         public T Load<T>(string filePath)
         {
-            Func<XmlDocument, T> deserialize = (document) => this.Deserialize<T>(document);
-            return SerializerCache<XmlSerializer>.Load<T>(filePath, deserialize);
+            T DeserializeCore(XmlDocument document) => this.Deserialize<T>(document);
+            return SerializerCache<XmlSerializer>.Load(filePath, DeserializeCore);
         }
 
         /// <summary>
@@ -71,12 +61,12 @@ namespace TypeLibRegisterCS.Serialization
         /// <returns>シリアル化された XML ドキュメント。</returns>
         public XmlDocument Serialize(object value)
         {
-            Func<Type, XmlSerializer> factory = (type) => XmlSerializerHelper.Create(type);
-            Action<XmlSerializer, XmlWriter, object> action = (serializer, writer, graph) =>
-            {
+            XmlSerializer Factory(Type type) => XmlSerializerHelper.Create(type);
+
+            void Action(XmlSerializer serializer, XmlWriter writer, object graph) =>
                 serializer.Serialize(writer, graph);
-            };
-            return SerializerCache<XmlSerializer>.Serialize(value, factory, action);
+
+            return SerializerCache<XmlSerializer>.Serialize(value, Factory, Action);
         }
 
         /// <summary>
@@ -86,7 +76,7 @@ namespace TypeLibRegisterCS.Serialization
         /// <returns>シリアル化された XML 文字列。</returns>
         public string SerializeXml(object value)
         {
-            XmlDocument document = this.Serialize(value);
+            var document = this.Serialize(value);
             return SerializerCache<XmlSerializer>.ToString(document.DocumentElement);
         }
 
@@ -98,12 +88,10 @@ namespace TypeLibRegisterCS.Serialization
         /// <returns>逆シリアル化される Object。</returns>
         public T Deserialize<T>(XmlDocument document)
         {
-            Func<Type, XmlSerializer> factory = (type) => { return XmlSerializerHelper.Create(type); };
-            Func<XmlSerializer, XmlReader, T> deserialize = (serializer, reader) =>
-            {
-                return (T)serializer.Deserialize(reader);
-            };
-            return SerializerCache<XmlSerializer>.Deserialize<T>(document, factory, deserialize);
+            XmlSerializer Factory(Type type) => XmlSerializerHelper.Create(type);
+            T DeserializeCore(XmlSerializer serializer, XmlReader reader) => (T)serializer.Deserialize(reader);
+
+            return SerializerCache<XmlSerializer>.Deserialize(document, Factory, DeserializeCore);
         }
 
         /// <summary>
@@ -114,9 +102,16 @@ namespace TypeLibRegisterCS.Serialization
         /// <returns>逆シリアル化される Object。</returns>
         public T DeserializeXml<T>(string serializedXml)
         {
-            XmlDocument document = new XmlDocument();
+            var document = new XmlDocument();
             document.LoadXml(serializedXml);
             return this.Deserialize<T>(document);
         }
+
+        /// <summary>
+        /// 指定した型のオブジェクトを XML ドキュメントにシリアル化したり、XML ドキュメントを指定した型のオブジェクトに逆シリアル化したりできる、XmlSerializer クラスの新しいインスタンスを生成します。
+        /// </summary>
+        /// <param name="type">XmlSerializer がシリアル化できるオブジェクトの型。</param>
+        /// <returns>生成された XmlSerializer。</returns>
+        private static XmlSerializer Create(Type type) => new XmlSerializer(type);
     }
 }

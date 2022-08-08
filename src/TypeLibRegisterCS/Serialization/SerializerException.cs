@@ -16,7 +16,7 @@ using System.Runtime.Serialization;
 namespace TypeLibRegisterCS.Serialization
 {
     /// <summary>
-    /// <see cref="XmlSerializerHelper"/> の各クラスにて例外が発生した場合にスローされる例外のオブジェクトを表します。
+    /// <see cref="XmlSerializerHelper" /> の各クラスにて例外が発生した場合にスローされる例外のオブジェクトを表します。
     /// </summary>
     [Serializable]
     public class SerializerException : Exception
@@ -25,7 +25,6 @@ namespace TypeLibRegisterCS.Serialization
         /// SerializerException クラスの新しいインスタンスを初期化します。
         /// </summary>
         public SerializerException()
-            : base()
         {
         }
 
@@ -53,7 +52,7 @@ namespace TypeLibRegisterCS.Serialization
         /// </summary>
         /// <param name="innerException">現在の例外の原因である例外。</param>
         public SerializerException(Exception innerException)
-            : base((innerException != null) ? innerException.Message : string.Empty, innerException)
+            : base(innerException != null ? innerException.Message : string.Empty, innerException)
         {
         }
 

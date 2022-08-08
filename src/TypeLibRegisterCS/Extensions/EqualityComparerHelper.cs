@@ -10,8 +10,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 #endregion
 
@@ -20,15 +18,8 @@ namespace TypeLibRegisterCS.Extensions
     /// <summary>
     /// オブジェクトが等しいかどうかの比較をサポートするオブジェクトを表します。
     /// </summary>
-    public sealed class EqualityComparerHelper
+    public static class EqualityComparerHelper
     {
-        /// <summary>
-        /// EqualityComparerHelper クラスの新しいインスタンスを初期化します。
-        /// </summary>
-        private EqualityComparerHelper()
-        {
-        }
-
         /// <summary>
         /// T 型の 2 つのオブジェクトが等しいかどうかを確認します。
         /// </summary>
@@ -39,7 +30,7 @@ namespace TypeLibRegisterCS.Extensions
         /// <returns>指定したオブジェクトが等しい場合は true。それ以外の場合は false。</returns>
         public static bool Equals<T>(T objA, T objB, Action<T, ICollection<object>> keysFactory)
         {
-            if (objA == null ^ objB == null)
+            if ((objA == null) ^ (objB == null))
             {
                 return false;
             }
@@ -83,7 +74,7 @@ namespace TypeLibRegisterCS.Extensions
         /// <returns>enumerableA と enumerableB が要素単位で同じインスタンスである場合、または両方のインスタンスが null 参照の場合は true。それ以外の場合は false。</returns>
         internal static bool EnumerableEquals(IEnumerable enumerableA, IEnumerable enumerableB)
         {
-            if (enumerableA == null ^ enumerableB == null)
+            if ((enumerableA == null) ^ (enumerableB == null))
             {
                 return false;
             }
@@ -94,8 +85,8 @@ namespace TypeLibRegisterCS.Extensions
             }
 
             // どちらも空で無い列挙子を列挙操作し、順次比較します。
-            IEnumerator enumeratorA = enumerableA.GetEnumerator();
-            IEnumerator enumeratorB = enumerableB.GetEnumerator();
+            var enumeratorA = enumerableA.GetEnumerator();
+            var enumeratorB = enumerableB.GetEnumerator();
             while (enumeratorA.MoveNext())
             {
                 if (!enumeratorB.MoveNext())
@@ -103,9 +94,9 @@ namespace TypeLibRegisterCS.Extensions
                     return false;
                 }
 
-                object valueA = enumeratorA.Current;
-                object valueB = enumeratorB.Current;
-                if (!object.Equals(valueA, valueB))
+                var valueA = enumeratorA.Current;
+                var valueB = enumeratorB.Current;
+                if (!Equals(valueA, valueB))
                 {
                     return false;
                 }

@@ -21,7 +21,8 @@ namespace TypeLibRegisterCS.Configurations
     public class FilterItem
     {
         /// <summary>すべてを表す FilterItem。</summary>
-        private static FilterItem allItem = new FilterItem() { DisplayName = "すべて", SearchPattern = "*.*", };
+        private static FilterItem _allItem = new FilterItem
+            { DisplayName = "すべて", SearchPattern = "*.*" };
 
         /// <summary>
         /// FilterItem クラスの新しいインスタンスを初期化します。
@@ -36,52 +37,35 @@ namespace TypeLibRegisterCS.Configurations
         /// すべてを表す FilterItem を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="FilterItem"/> 型。
+        /// 値を表す<see cref="FilterItem" /> 型。
         /// <para>すべてを表す FilterItem。既定値は FilterItem.All です。</para>
         /// </value>
-        public static FilterItem All
-        {
-            get
-            {
-                return FilterItem.allItem;
-            }
-        }
+        public static FilterItem All => FilterItem._allItem;
 
         /// <summary>
         /// 表示名を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>表示名。既定値は string.Empty です。</para>
         /// </value>
         [XmlAttribute("displayName")]
-        public string DisplayName
-        {
-            get;
-            set;
-        }
+        public string DisplayName { get; set; }
 
         /// <summary>
         /// ワイルドカードを取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>ワイルドカード。既定値は "*.*" です。</para>
         /// </value>
         [XmlAttribute("searchPattern")]
-        public string SearchPattern
-        {
-            get;
-            set;
-        }
+        public string SearchPattern { get; set; }
 
         /// <summary>
         /// 現在の System.Object を表す System.String を返します。
         /// </summary>
         /// <returns>現在の System.Object を表す System.String。</returns>
-        public override string ToString()
-        {
-            return this.DisplayName;
-        }
+        public override string ToString() => this.DisplayName;
     }
 }

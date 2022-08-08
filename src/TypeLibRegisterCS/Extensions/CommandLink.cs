@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Drawing.Text;
 using System.Globalization;
 using System.Windows.Forms;
 
@@ -68,39 +69,18 @@ namespace TypeLibRegisterCS.Extensions
         }
 
         /// <summary>
-        /// State
-        /// </summary>
-        private enum State
-        {
-            /// <summary>Normal</summary>
-            Normal,
-
-            /// <summary>Hover</summary>
-            Hover,
-
-            /// <summary>Pushed</summary>
-            Pushed,
-
-            /// <summary>Disabled</summary>
-            Disabled,
-        }
-
-        /// <summary>
         /// HeaderText を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>HeaderText。既定値は string.Empty です。</para>
         /// </value>
-        [Category("Command Appearance"),
-         Browsable(true),
-         DefaultValue("Header Text")]
+        [Category("Command Appearance")]
+        [Browsable(true)]
+        [DefaultValue("Header Text")]
         public string HeaderText
         {
-            get
-            {
-                return this.headerText;
-            }
+            get => this.headerText;
 
             set
             {
@@ -113,18 +93,15 @@ namespace TypeLibRegisterCS.Extensions
         /// DescriptionText を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>DescriptionText。既定値は string.Empty です。</para>
         /// </value>
-        [Category("Command Appearance"),
-         Browsable(true),
-         DefaultValue("Description")]
+        [Category("Command Appearance")]
+        [Browsable(true)]
+        [DefaultValue("Description")]
         public string DescriptionText
         {
-            get
-            {
-                return this.descriptionText;
-            }
+            get => this.descriptionText;
 
             set
             {
@@ -137,18 +114,15 @@ namespace TypeLibRegisterCS.Extensions
         /// Image を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Bitmap"/> 型。
+        /// 値を表す<see cref="Bitmap" /> 型。
         /// <para>Image。既定値は null です。</para>
         /// </value>
-        [Category("Command Appearance"),
-         Browsable(true),
-         DefaultValue(null)]
+        [Category("Command Appearance")]
+        [Browsable(true)]
+        [DefaultValue(null)]
         public Bitmap Image
         {
-            get
-            {
-                return this.image;
-            }
+            get => this.image;
 
             set
             {
@@ -181,18 +155,15 @@ namespace TypeLibRegisterCS.Extensions
         /// ImageScalingSize を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Size"/> 型。
+        /// 値を表す<see cref="Size" /> 型。
         /// <para>ImageScalingSize。既定値は 24,24 です。</para>
         /// </value>
-        [Category("Command Appearance"),
-         Browsable(true),
-         DefaultValue(typeof(Size), "24,24")]
+        [Category("Command Appearance")]
+        [Browsable(true)]
+        [DefaultValue(typeof(Size), "24,24")]
         public Size ImageScalingSize
         {
-            get
-            {
-                return this.imageSize;
-            }
+            get => this.imageSize;
 
             set
             {
@@ -205,18 +176,15 @@ namespace TypeLibRegisterCS.Extensions
         /// ImageVerticalAlign を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="VerticalAlign"/> 型。
+        /// 値を表す<see cref="VerticalAlign" /> 型。
         /// <para>ImageVerticalAlign。既定値は VerticalAlign.Top です。</para>
         /// </value>
-        [Category("Command Appearance"),
-         Browsable(true),
-         DefaultValue(VerticalAlign.Top)]
+        [Category("Command Appearance")]
+        [Browsable(true)]
+        [DefaultValue(VerticalAlign.Top)]
         public VerticalAlign ImageVerticalAlign
         {
-            get
-            {
-                return this.imageAlign;
-            }
+            get => this.imageAlign;
 
             set
             {
@@ -229,18 +197,15 @@ namespace TypeLibRegisterCS.Extensions
         /// TextVerticalAlign を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="VerticalAlign"/> 型。
+        /// 値を表す<see cref="VerticalAlign" /> 型。
         /// <para>TextVerticalAlign。既定値は VerticalAlign.Middle です。</para>
         /// </value>
-        [Category("Command Appearance"),
-         Browsable(true),
-         DefaultValue(VerticalAlign.Middle)]
+        [Category("Command Appearance")]
+        [Browsable(true)]
+        [DefaultValue(VerticalAlign.Middle)]
         public VerticalAlign TextVerticalAlign
         {
-            get
-            {
-                return this.textAlign;
-            }
+            get => this.textAlign;
 
             set
             {
@@ -253,16 +218,13 @@ namespace TypeLibRegisterCS.Extensions
         /// Font を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Font"/> 型。
+        /// 値を表す<see cref="Font" /> 型。
         /// <para>Font。既定値は null です。</para>
         /// </value>
         [Category("Command Appearance")]
         public override Font Font
         {
-            get
-            {
-                return base.Font;
-            }
+            get => base.Font;
 
             set
             {
@@ -283,121 +245,22 @@ namespace TypeLibRegisterCS.Extensions
         /// DialogResult を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="DialogResult"/> 型。
+        /// 値を表す<see cref="DialogResult" /> 型。
         /// <para>DialogResult。既定値は DialogResult.None です。</para>
         /// </value>
-        [Category("Behavior"),
-         DefaultValue(DialogResult.None)]
+        [Category("Behavior")]
+        [DefaultValue(DialogResult.None)]
         public DialogResult DialogResult
         {
-            get
-            {
-                return this.diagResult;
-            }
+            get => this.diagResult;
 
-            set
-            {
-                this.diagResult = value;
-            }
+            set => this.diagResult = value;
         }
 
         /// <summary>
-        /// RoundedRect
+        /// Click イベントを発生させます。
         /// </summary>
-        /// <param name="width">width</param>
-        /// <param name="height">height</param>
-        /// <param name="radius">radius</param>
-        /// <returns>GraphicsPath</returns>
-        private static GraphicsPath RoundedRect(int width, int height, int radius)
-        {
-            RectangleF baseRect = new RectangleF(0, 0, width, height);
-            float diameter = radius * 2.0f;
-            SizeF sizeF = new SizeF(diameter, diameter);
-            RectangleF arc = new RectangleF(baseRect.Location, sizeF);
-            GraphicsPath path = new GraphicsPath();
-
-            // top left arc 
-            path.AddArc(arc, 180, 90);
-
-            // top right arc 
-            arc.X = baseRect.Right - diameter;
-            path.AddArc(arc, 270, 90);
-
-            // bottom right arc 
-            arc.Y = baseRect.Bottom - diameter;
-            path.AddArc(arc, 0, 90);
-
-            // bottom left arc
-            arc.X = baseRect.Left;
-            path.AddArc(arc, 90, 90);
-
-            path.CloseFigure();
-            return path;
-        }
-
-        /// <summary>
-        /// GetGrayscale
-        /// </summary>
-        /// <param name="original">original</param>
-        /// <returns>Bitmap</returns>
-        private static Bitmap GetGrayscale(Image original)
-        {
-            //Set up the drawing surface
-            Bitmap grayscale = new Bitmap(original.Width, original.Height);
-            Graphics g = Graphics.FromImage(grayscale);
-
-            //Grayscale Color Matrix
-            ColorMatrix colorMatrix = new ColorMatrix(
-                new float[][]
-                {
-                    new float[] { 0.3f, 0.3f, 0.3f, 0, 0 },
-                    new float[] { 0.59f, 0.59f, 0.59f, 0, 0 },
-                    new float[] { 0.11f, 0.11f, 0.11f, 0, 0 },
-                    new float[] { 0, 0, 0, 1, 0 },
-                    new float[] { 0, 0, 0, 0, 1 },
-                });
-
-            //Create attributes
-            ImageAttributes att = new ImageAttributes();
-            att.SetColorMatrix(colorMatrix);
-
-            //Draw the image with the new attributes
-            g.DrawImage(original, new Rectangle(0, 0, original.Width, original.Height), 0, 0, original.Width, original.Height, GraphicsUnit.Pixel, att);
-
-            //Clean up
-            g.Dispose();
-
-            return grayscale;
-        }
-
-        /// <summary>
-        /// WordWrap
-        /// </summary>
-        /// <param name="originalString">originalString</param>
-        /// <param name="font">font</param>
-        /// <param name="targetWidth">targetWidth</param>
-        /// <returns>string</returns>
-        private static string WordWrap(string originalString, Font font, int targetWidth)
-        {
-            string[] words = originalString.Split(' ');
-            string wrappedString = words[0];
-
-            //Add one word at a time, making sure it doesn't go over
-            for (int i = 1; i < words.Length; i++)
-            {
-                //Use TextRenderer since it has a static measure function
-                if (TextRenderer.MeasureText(wrappedString + " " + words[i], font).Width <= targetWidth)
-                {
-                    wrappedString += " " + words[i]; //next word fits on the same line
-                }
-                else
-                {
-                    wrappedString += Environment.NewLine + words[i]; //start it on the next line
-                }
-            }
-
-            return wrappedString;
-        }
+        public void PerformClick() => this.OnClick(null);
 
         /// <summary>
         /// CommandLink クラスのインスタンスによって使用されているアンマネージ リソースを解放し、オプションでマネージ リソースも解放します。
@@ -443,8 +306,6 @@ namespace TypeLibRegisterCS.Extensions
                 case State.Disabled:
                     this.DrawNormalState(e.Graphics); //DrawForeground takes care of drawing the disabled state
                     break;
-                default:
-                    break;
             }
         }
 
@@ -455,7 +316,7 @@ namespace TypeLibRegisterCS.Extensions
         protected override void OnClick(EventArgs e)
         {
             base.OnClick(e);
-            if (this.diagResult != DialogResult.None)
+            if (this.diagResult != DialogResult.None && this.ParentForm != null)
             {
                 this.ParentForm.DialogResult = this.diagResult;
                 this.ParentForm.Close();
@@ -588,22 +449,121 @@ namespace TypeLibRegisterCS.Extensions
         }
 
         /// <summary>
+        /// RoundedRect
+        /// </summary>
+        /// <param name="width">width</param>
+        /// <param name="height">height</param>
+        /// <param name="radius">radius</param>
+        /// <returns>GraphicsPath</returns>
+        private static GraphicsPath RoundedRect(int width, int height, int radius)
+        {
+            var baseRect = new RectangleF(0, 0, width, height);
+            var diameter = radius * 2.0f;
+            var sizeF = new SizeF(diameter, diameter);
+            var arc = new RectangleF(baseRect.Location, sizeF);
+            var path = new GraphicsPath();
+
+            // top left arc 
+            path.AddArc(arc, 180, 90);
+
+            // top right arc 
+            arc.X = baseRect.Right - diameter;
+            path.AddArc(arc, 270, 90);
+
+            // bottom right arc 
+            arc.Y = baseRect.Bottom - diameter;
+            path.AddArc(arc, 0, 90);
+
+            // bottom left arc
+            arc.X = baseRect.Left;
+            path.AddArc(arc, 90, 90);
+
+            path.CloseFigure();
+            return path;
+        }
+
+        /// <summary>
+        /// GetGrayscale
+        /// </summary>
+        /// <param name="original">original</param>
+        /// <returns>Bitmap</returns>
+        private static Bitmap GetGrayscale(Image original)
+        {
+            //Set up the drawing surface
+            var grayscale = new Bitmap(original.Width, original.Height);
+            var g = Graphics.FromImage(grayscale);
+
+            //Grayscale Color Matrix
+            var colorMatrix = new ColorMatrix(
+                new[]
+                {
+                    new[] { 0.3f, 0.3f, 0.3f, 0, 0 },
+                    new[] { 0.59f, 0.59f, 0.59f, 0, 0 },
+                    new[] { 0.11f, 0.11f, 0.11f, 0, 0 },
+                    new float[] { 0, 0, 0, 1, 0 },
+                    new float[] { 0, 0, 0, 0, 1 },
+                });
+
+            //Create attributes
+            var att = new ImageAttributes();
+            att.SetColorMatrix(colorMatrix);
+
+            //Draw the image with the new attributes
+            g.DrawImage(original, new Rectangle(0, 0, original.Width, original.Height), 0, 0, original.Width,
+                original.Height, GraphicsUnit.Pixel, att);
+
+            //Clean up
+            g.Dispose();
+
+            return grayscale;
+        }
+
+        /// <summary>
+        /// WordWrap
+        /// </summary>
+        /// <param name="originalString">originalString</param>
+        /// <param name="font">font</param>
+        /// <param name="targetWidth">targetWidth</param>
+        /// <returns>string</returns>
+        private static string WordWrap(string originalString, Font font, int targetWidth)
+        {
+            var words = originalString.Split(' ');
+            var wrappedString = words[0];
+
+            //Add one word at a time, making sure it doesn't go over
+            for (var i = 1; i < words.Length; i++)
+            {
+                //Use TextRenderer since it has a static measure function
+                if (TextRenderer.MeasureText(wrappedString + " " + words[i], font).Width <= targetWidth)
+                {
+                    wrappedString += " " + words[i]; //next word fits on the same line
+                }
+                else
+                {
+                    wrappedString += Environment.NewLine + words[i]; //start it on the next line
+                }
+            }
+
+            return wrappedString;
+        }
+
+        /// <summary>
         /// Draws the light-blue rectangle around the button when it is focused (by Tab for example)
         /// </summary>
         /// <param name="g">Graphics</param>
         private void DrawHighlight(Graphics g)
         {
             //The outline is drawn inside the button
-            GraphicsPath innerRegion = CommandLink.RoundedRect(this.Width - 3, this.Height - 3, 3);
+            var innerRegion = CommandLink.RoundedRect(this.Width - 3, this.Height - 3, 3);
 
             //----Shift the inner region inwards
-            Matrix translate = new Matrix();
+            var translate = new Matrix();
             translate.Translate(1, 1);
             innerRegion.Transform(translate);
             translate.Dispose();
-            
+
             //-----
-            Pen inlinePen = new Pen(Color.FromArgb(192, 233, 243)); //Light-blue
+            var inlinePen = new Pen(Color.FromArgb(192, 233, 243)); //Light-blue
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -620,22 +580,24 @@ namespace TypeLibRegisterCS.Extensions
         /// <param name="g">Graphics</param>
         private void DrawHoverState(Graphics g)
         {
-            GraphicsPath outerRegion = CommandLink.RoundedRect(this.Width - 1, this.Height - 1, 3);
-            GraphicsPath innerRegion = CommandLink.RoundedRect(this.Width - 3, this.Height - 3, 2);
+            var outerRegion = CommandLink.RoundedRect(this.Width - 1, this.Height - 1, 3);
+            var innerRegion = CommandLink.RoundedRect(this.Width - 3, this.Height - 3, 2);
             //----Shift the inner region inwards
-            Matrix translate = new Matrix();
+            var translate = new Matrix();
             translate.Translate(1, 1);
             innerRegion.Transform(translate);
             translate.Dispose();
             //-----
-            Rectangle backgroundRect = new Rectangle(1, 1, this.Width - 2, (int)(this.Height * 0.75f) - 2);
+            var backgroundRect = new Rectangle(1, 1, this.Width - 2, (int)(this.Height * 0.75f) - 2);
 
-            Pen outlinePen = new Pen(Color.FromArgb(189, 189, 189)); //SystemColors.ControlDark
-            Pen inlinePen = new Pen(Color.FromArgb(245, 255, 255, 255)); //Slightly transparent white
+            var outlinePen = new Pen(Color.FromArgb(189, 189, 189)); //SystemColors.ControlDark
+            var inlinePen = new Pen(Color.FromArgb(245, 255, 255, 255)); //Slightly transparent white
 
             //Gradient brush for the background, goes from white to transparent 75% of the way down
-            LinearGradientBrush backBrush = new LinearGradientBrush(new Point(0, 0), new Point(0, backgroundRect.Height), Color.White, Color.Transparent);
-            backBrush.WrapMode = WrapMode.TileFlipX; //keeps the gradient smooth incase of the glitch where there's an extra gradient line
+            var backBrush = new LinearGradientBrush(new Point(0, 0), new Point(0, backgroundRect.Height), Color.White,
+                Color.Transparent);
+            backBrush.WrapMode
+                = WrapMode.TileFlipX; //keeps the gradient smooth incase of the glitch where there's an extra gradient line
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -660,19 +622,19 @@ namespace TypeLibRegisterCS.Extensions
         /// <param name="g">Graphics</param>
         private void DrawPushedState(Graphics g)
         {
-            GraphicsPath outerRegion = CommandLink.RoundedRect(this.Width - 1, this.Height - 1, 3);
-            GraphicsPath innerRegion = CommandLink.RoundedRect(this.Width - 3, this.Height - 3, 2);
+            var outerRegion = CommandLink.RoundedRect(this.Width - 1, this.Height - 1, 3);
+            var innerRegion = CommandLink.RoundedRect(this.Width - 3, this.Height - 3, 2);
             //----Shift the inner region inwards
-            Matrix translate = new Matrix();
+            var translate = new Matrix();
             translate.Translate(1, 1);
             innerRegion.Transform(translate);
             translate.Dispose();
             //-----
-            Rectangle backgroundRect = new Rectangle(1, 1, this.Width - 3, this.Height - 3);
+            var backgroundRect = new Rectangle(1, 1, this.Width - 3, this.Height - 3);
 
-            Pen outlinePen = new Pen(Color.FromArgb(167, 167, 167)); //Outline is darker than normal
-            Pen inlinePen = new Pen(Color.FromArgb(227, 227, 227)); //Darker white
-            SolidBrush backBrush = new SolidBrush(Color.FromArgb(234, 234, 234)); //SystemColors.ControlLight
+            var outlinePen = new Pen(Color.FromArgb(167, 167, 167)); //Outline is darker than normal
+            var inlinePen = new Pen(Color.FromArgb(227, 227, 227)); //Darker white
+            var backBrush = new SolidBrush(Color.FromArgb(234, 234, 234)); //SystemColors.ControlLight
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -711,28 +673,31 @@ namespace TypeLibRegisterCS.Extensions
         private void DrawForeground(Graphics g)
         {
             //Make sure drawing is of good quality
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
             g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
             //Coordinates-------------------------------
-            int imageLeft = 9;
-            int imageTop = 0;
-            int textLeft = 20;
+            var imageLeft = 9;
+            var imageTop = 0;
+            var textLeft = 20;
             if (this.image != null)
             {
-                textLeft = imageLeft + this.imageSize.Width + 5; //adjust the text left coordinate to accomodate the image
+                textLeft = imageLeft + this.imageSize.Width +
+                           5; //adjust the text left coordinate to accomodate the image
             }
 
             //
             //Text Layout-------------------------------
-            string wrappedDescriptText = CommandLink.WordWrap(this.descriptionText, this.descriptFont, this.Width - (textLeft + this.offset) - 5);
+            var wrappedDescriptText = CommandLink.WordWrap(this.descriptionText, this.descriptFont,
+                this.Width - (textLeft + this.offset) - 5);
 
             //Gets the width/height of the text once it's drawn out
-            SizeF headerLayout = g.MeasureString(this.headerText, this.Font);
-            SizeF descriptLayout = g.MeasureString(wrappedDescriptText, this.descriptFont);
+            var headerLayout = g.MeasureString(this.headerText, this.Font);
+            var descriptLayout = g.MeasureString(wrappedDescriptText, this.descriptFont);
 
             //Merge the two sizes into one big rectangle
-            Rectangle totalRect = new Rectangle(0, 0, (int)Math.Max(headerLayout.Width, descriptLayout.Width), (int)(headerLayout.Height + descriptLayout.Height) - 4);
+            var totalRect = new Rectangle(0, 0, (int)Math.Max(headerLayout.Width, descriptLayout.Width),
+                (int)(headerLayout.Height + descriptLayout.Height) - 4);
 
             //Align the text rectangle
             totalRect.X = textLeft;
@@ -747,8 +712,6 @@ namespace TypeLibRegisterCS.Extensions
                     break;
                 case VerticalAlign.Bottom:
                     totalRect.Y = this.Height - totalRect.Height;
-                    break;
-                default:
                     break;
             }
             //---------------------------------------------------
@@ -767,24 +730,23 @@ namespace TypeLibRegisterCS.Extensions
                     case VerticalAlign.Bottom:
                         imageTop = this.Height - this.imageSize.Height;
                         break;
-                    default:
-                        break;
                 }
             }
             //-----------------------------------------------
 
             //Brushes--------------------------------
             // Determine text color depending on whether the control is enabled or not
-            Color textColor = this.ForeColor;
+            var textColor = this.ForeColor;
             if (!this.Enabled)
             {
                 textColor = SystemColors.GrayText;
             }
 
-            SolidBrush textBrush = new SolidBrush(textColor);
-            
+            var textBrush = new SolidBrush(textColor);
+
             //------------------------------------------
-            g.DrawString(this.headerText, this.Font, textBrush, totalRect.Left + this.offset, totalRect.Top + this.offset);
+            g.DrawString(this.headerText, this.Font, textBrush, totalRect.Left + this.offset,
+                totalRect.Top + this.offset);
             //Note: the + 1 in "totalRect.Left + 1 + offset" compensates for GDI+ inconsistency
             g.DrawString(
                 wrappedDescriptText,
@@ -797,7 +759,9 @@ namespace TypeLibRegisterCS.Extensions
             {
                 if (this.Enabled)
                 {
-                    g.DrawImage(this.image, new Rectangle(imageLeft + this.offset, imageTop + this.offset, this.imageSize.Width, this.imageSize.Height));
+                    g.DrawImage(this.image,
+                        new Rectangle(imageLeft + this.offset, imageTop + this.offset, this.imageSize.Width,
+                            this.imageSize.Height));
                 }
                 else
                 {
@@ -807,7 +771,9 @@ namespace TypeLibRegisterCS.Extensions
                         this.grayImage = CommandLink.GetGrayscale(this.image); //generate grayscale now
                     }
 
-                    g.DrawImage(this.grayImage, new Rectangle(imageLeft + this.offset, imageTop + this.offset, this.imageSize.Width, this.imageSize.Height));
+                    g.DrawImage(this.grayImage,
+                        new Rectangle(imageLeft + this.offset, imageTop + this.offset, this.imageSize.Width,
+                            this.imageSize.Height));
                 }
             }
 
@@ -816,11 +782,21 @@ namespace TypeLibRegisterCS.Extensions
         }
 
         /// <summary>
-        /// Click イベントを発生させます。
+        /// State
         /// </summary>
-        public void PerformClick()
+        private enum State
         {
-            this.OnClick(null);
+            /// <summary>Normal</summary>
+            Normal,
+
+            /// <summary>Hover</summary>
+            Hover,
+
+            /// <summary>Pushed</summary>
+            Pushed,
+
+            /// <summary>Disabled</summary>
+            Disabled,
         }
     }
 }

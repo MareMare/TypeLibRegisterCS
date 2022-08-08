@@ -9,20 +9,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.SqlServer.MessageBox;
 using TypeLibRegisterCS.Configurations;
 using TypeLibRegisterCS.Entities;
 using TypeLibRegisterCS.Extensions;
-using TypeLibRegisterCS.Serialization;
+using Timer = System.Timers.Timer;
 
 #endregion
 
@@ -37,7 +36,7 @@ namespace TypeLibRegisterCS
         private readonly TypeLibCollector collector;
 
         /// <summary>時刻表示用のタイマを表します。</summary>
-        private readonly System.Timers.Timer timer;
+        private readonly Timer timer;
 
         /// <summary>リストボックスの最大の横幅を表します。</summary>
         private int maxOfLoggingItemWidth;
@@ -50,8 +49,8 @@ namespace TypeLibRegisterCS
             this.InitializeComponent();
 
             this.collector = new TypeLibCollector();
-            this.collector.ActionToWriteLog = (category, message) => this.AppendLog(category, message);
-            
+            this.collector.ActionToWriteLog = this.AppendLog;
+
             var config = SerializableConfiguration<TypeLibRegisterConfiguration>.GetInstance();
             var ctrl = this.filterComboBox;
             ctrl.UseWaitCursor = true;
@@ -61,14 +60,14 @@ namespace TypeLibRegisterCS
             ctrl.UseWaitCursor = false;
 
             this.loggingListBox.DrawMode = DrawMode.OwnerDrawFixed;
-            
+
             this.AppendLog(LoggingCategory.Debug, "LoggingCategory.Debug");
             this.AppendLog(LoggingCategory.Info, "LoggingCategory.Info");
             this.AppendLog(LoggingCategory.Warning, "LoggingCategory.Warning");
             this.AppendLog(LoggingCategory.Error, "LoggingCategory.Error");
 
-            var context = WindowsFormsSynchronizationContext.Current;
-            this.timer = new System.Timers.Timer()
+            var context = SynchronizationContext.Current;
+            this.timer = new Timer
             {
                 AutoReset = true,
                 Interval = 1000,
@@ -76,7 +75,7 @@ namespace TypeLibRegisterCS
             this.timer.Elapsed += (sender, e) =>
             {
                 context.Post(
-                    (stateOfContext) =>
+                    stateOfContext =>
                     {
                         var timeText = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.InvariantCulture);
                         if (this.informationToolStripStatusLabel.Text != timeText)
@@ -94,20 +93,16 @@ namespace TypeLibRegisterCS
         /// TypeLibIdentifier コレクション (全件) を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="IEnumerable{TypeLibIdentifier}"/> 型。
+        /// 値を表す<see cref="IEnumerable{TypeLibIdentifier}" /> 型。
         /// <para>TypeLibIdentifier コレクション (全件)。既定値は要素数 0 です。</para>
         /// </value>
-        internal IEnumerable<TypeLibIdentifier> AllTypeLibIdentifiers
-        {
-            get;
-            private set;
-        }
+        internal IEnumerable<TypeLibIdentifier> AllTypeLibIdentifiers { get; private set; }
 
         /// <summary>
         /// 現在表示されている TypeLibIdentifier コレクションを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="IEnumerable{TypeLibIdentifier}"/> 型。
+        /// 値を表す<see cref="IEnumerable{TypeLibIdentifier}" /> 型。
         /// <para>現在表示されている TypeLibIdentifier コレクション。既定値は要素数 0 です。</para>
         /// </value>
         internal IEnumerable<TypeLibIdentifier> CurrentTypeLibIdentifiers
@@ -121,7 +116,7 @@ namespace TypeLibRegisterCS
             set
             {
                 this.typeLibIdentifierDataGridView.AutoGenerateColumns = false;
-                this.typeLibIdentifierDataGridView.DataSource = (value != null) ? value.ToList() : null;
+                this.typeLibIdentifierDataGridView.DataSource = value != null ? value.ToList() : null;
                 this.typeLibIdentifierDataGridView.ClearSelection();
                 this.typeLibIdentifierPropertyGrid.SelectedObject = null;
             }
@@ -135,25 +130,26 @@ namespace TypeLibRegisterCS
         private static Bitmap GetGrayscale(Image original)
         {
             // Set up the drawing surface
-            Bitmap grayscale = new Bitmap(original.Width, original.Height);
-            using (Graphics g = Graphics.FromImage(grayscale))
+            var grayscale = new Bitmap(original.Width, original.Height);
+            using (var g = Graphics.FromImage(grayscale))
             {
                 // Grayscale Color Matrix
-                ColorMatrix colorMatrix = new ColorMatrix(
-                    new float[][]
+                var colorMatrix = new ColorMatrix(
+                    new[]
                     {
-                        new float[] { 0.3f, 0.3f, 0.3f, 0, 0 },
-                        new float[] { 0.59f, 0.59f, 0.59f, 0, 0 },
-                        new float[] { 0.11f, 0.11f, 0.11f, 0, 0 },
+                        new[] { 0.3f, 0.3f, 0.3f, 0, 0 },
+                        new[] { 0.59f, 0.59f, 0.59f, 0, 0 },
+                        new[] { 0.11f, 0.11f, 0.11f, 0, 0 },
                         new float[] { 0, 0, 0, 1, 0 },
                         new float[] { 0, 0, 0, 0, 1 },
                     });
                 // Create attributes
-                ImageAttributes att = new ImageAttributes();
+                var att = new ImageAttributes();
                 att.SetColorMatrix(colorMatrix);
 
                 // Draw the image with the new attributes
-                g.DrawImage(original, new Rectangle(0, 0, original.Width, original.Height), 0, 0, original.Width, original.Height, GraphicsUnit.Pixel, att);
+                g.DrawImage(original, new Rectangle(0, 0, original.Width, original.Height), 0, 0, original.Width,
+                    original.Height, GraphicsUnit.Pixel, att);
             }
 
             return grayscale;
@@ -167,7 +163,7 @@ namespace TypeLibRegisterCS
         /// <param name="args">0 個以上の書式設定対象オブジェクトを含んだ Object 配列。</param>
         private void AppendLog(LoggingCategory category, string format, params object[] args)
         {
-            string message = string.Format(CultureInfo.InvariantCulture, format, args);
+            var message = string.Format(CultureInfo.InvariantCulture, format, args);
             this.AppendLog(category, message);
         }
 
@@ -195,7 +191,7 @@ namespace TypeLibRegisterCS
         /// <param name="isBusy">処理中の場合は true。それ以外は false。</param>
         private void SetScaningProgressState(bool isBusy)
         {
-            this.scaningProgressImageLabel.Text = "Scaning...";
+            this.scaningProgressImageLabel.Text = @"Scanning...";
             this.scaningProgressImageLabel.Visible = isBusy;
             this.scaningToolStripProgressBar.Visible = isBusy;
 
@@ -210,7 +206,7 @@ namespace TypeLibRegisterCS
         /// <param name="isBusy">処理中の場合は true。それ以外は false。</param>
         private void SetSavingProgressState(bool isBusy)
         {
-            this.scaningProgressImageLabel.Text = "Saving...";
+            this.scaningProgressImageLabel.Text = @"Saving...";
             this.scaningProgressImageLabel.Visible = isBusy;
             this.scaningToolStripProgressBar.Visible = isBusy;
 
@@ -232,23 +228,18 @@ namespace TypeLibRegisterCS
             this.commandButtonLayoutPanel.Enabled = !isBusy;
             this.logoPicturePanel.Enabled = !isBusy;
         }
-        
+
         /// <summary>
         /// 削除進捗率を設定します。
         /// </summary>
         /// <param name="percent">進捗率。</param>
-        private void SetDeletingProgress(double percent)
-        {
+        private void SetDeletingProgress(double percent) =>
             this.deletingToolStripProgressBar.Value = Convert.ToInt32(percent);
-        }
 
         /// <summary>
         /// フィルタラベルをクリアします。
         /// </summary>
-        private void ClearFoundInformation()
-        {
-            this.filterLabel.Text = string.Empty;
-        }
+        private void ClearFoundInformation() => this.filterLabel.Text = string.Empty;
 
         /// <summary>
         /// フィルタラベルの内容を設定します。
@@ -259,7 +250,7 @@ namespace TypeLibRegisterCS
         {
             this.filterLabel.Text = string.Format(
                 CultureInfo.InvariantCulture,
-                "Filter {0}: {1} items found.",
+                @"Filter {0}: {1} items found.",
                 filter != null ? "(" + filter.SearchPattern + ")" : string.Empty,
                 foundItemsCount);
             this.AppendLog(LoggingCategory.Info, this.filterLabel.Text);
@@ -268,19 +259,15 @@ namespace TypeLibRegisterCS
         /// <summary>
         /// すべてを検索します。
         /// </summary>
-        private void PopulateAll()
-        {
-            this.Populate(FilterItem.All);
-        }
+        private void PopulateAll() => this.Populate(FilterItem.All);
 
         /// <summary>
         /// 検索します。
         /// </summary>
         /// <param name="filter">フィルタされる FilterItem。</param>
-        private void Populate(FilterItem filter)
-        {
-            this.ConcretePopulate(filter, (identifier) => TypeLibCollector.PathMatchSpec(identifier.FilePath, filter.SearchPattern));
-        }
+        private void Populate(FilterItem filter) =>
+            this.ConcretePopulate(filter,
+                identifier => TypeLibCollector.PathMatchSpec(identifier.FilePath, filter.SearchPattern));
 
         /// <summary>
         /// 検索します。
@@ -296,17 +283,19 @@ namespace TypeLibRegisterCS
             this.ClearFoundInformation();
 
             this.collector.PopulateAsync(
-                (foundItems) =>
+                foundItems =>
                 {
-                    this.AllTypeLibIdentifiers = foundItems.ToList();
+                    var items = foundItems.ToList();
+                    this.AllTypeLibIdentifiers = items;
 
-                    var filteredItems = foundItems
-                        .Where((identifier) => predicate(identifier));
+                    var filteredItems = items
+                        .Where(identifier => predicate(identifier))
+                        .ToList();
                     this.CurrentTypeLibIdentifiers = filteredItems;
-                    this.SetFoundInformation(filter, filteredItems.Count());
+                    this.SetFoundInformation(filter, filteredItems.Count);
                     this.SetScaningProgressState(false);
                 },
-                (ex) =>
+                ex =>
                 {
                     this.HandleException(ex);
                     this.SetScaningProgressState(false);
@@ -329,9 +318,10 @@ namespace TypeLibRegisterCS
             this.ClearFoundInformation();
 
             var filteredItems = this.AllTypeLibIdentifiers
-                .Where((identifier) => TypeLibCollector.PathMatchSpec(identifier.FilePath, filter.SearchPattern));
+                .Where(identifier => TypeLibCollector.PathMatchSpec(identifier.FilePath, filter.SearchPattern))
+                .ToList();
             this.CurrentTypeLibIdentifiers = filteredItems;
-            this.SetFoundInformation(filter, filteredItems.Count());
+            this.SetFoundInformation(filter, filteredItems.Count);
         }
 
         /// <summary>
@@ -347,7 +337,7 @@ namespace TypeLibRegisterCS
                 this.filterComboBox.SelectedItem as FilterItem,
                 this.CurrentTypeLibIdentifiers,
                 () => this.SetSavingProgressState(false),
-                (ex) =>
+                ex =>
                 {
                     this.HandleException(ex);
                     this.SetSavingProgressState(false);
@@ -366,12 +356,12 @@ namespace TypeLibRegisterCS
             var deletedItems = new List<TypeLibIdentifier>();
             var queryToDelete = this.typeLibIdentifierDataGridView.SelectedRows
                 .OfType<DataGridViewRow>()
-                .Select((row) => row.DataBoundItem as TypeLibIdentifier)
-                .Where((identifier) => identifier != null);
+                .Select(row => row.DataBoundItem as TypeLibIdentifier)
+                .Where(identifier => identifier != null);
             this.collector.DeleteRegistryAsync(
                 queryToDelete,
-                (identifier) => deletedItems.Add(identifier),
-                (percent) => this.SetDeletingProgress(percent),
+                identifier => deletedItems.Add(identifier),
+                this.SetDeletingProgress,
                 () =>
                 {
                     var query = this.AllTypeLibIdentifiers.Except(deletedItems);
@@ -379,7 +369,7 @@ namespace TypeLibRegisterCS
                     this.Filter(filter);
                     this.SetDeletingProgressState(false);
                 },
-                (ex) =>
+                ex =>
                 {
                     this.HandleException(ex);
                     this.SetDeletingProgressState(false);
@@ -399,10 +389,10 @@ namespace TypeLibRegisterCS
                 ExceptionMessageBoxSymbol.Error,
                 ExceptionMessageBoxDefaultButton.Button1,
                 ExceptionMessageBoxOptions.None)
-                {
-                    ShowToolBar = true,
-                    UseOwnerFont = true,
-                };
+            {
+                ShowToolBar = true,
+                UseOwnerFont = true,
+            };
             dialog.Show(this);
         }
 
@@ -414,12 +404,12 @@ namespace TypeLibRegisterCS
         private void MainForm_Load(object sender, EventArgs e)
         {
             this.timer.Start();
-            
+
             var infos = new List<string>();
             infos.Add(TypeLibCollector.CpuName);
             infos.Add(TypeLibCollector.CpuIdentifier);
             this.cpuInfoLabel.Text = string.Join(Environment.NewLine, infos.ToArray());
-            
+
             this.SetScaningProgressState(false);
             this.SetDeletingProgressState(false);
             this.ClearFoundInformation();
@@ -466,16 +456,16 @@ namespace TypeLibRegisterCS
         private void loggingListBox_DrawItem(object sender, DrawItemEventArgs e)
         {
             var ctrl = sender as ListBox;
-            if (e.Index == -1)
+            if (ctrl == null || e.Index == -1)
             {
                 return;
             }
 
-            LoggingItem item = ctrl.Items[e.Index] as LoggingItem;
-            string itemText = item != null ? item.ToString() : string.Empty;
-            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-            Color foreColor = isSelected ? Color.White : e.ForeColor;
-            Color backColor = isSelected ? Color.Orange : e.BackColor;
+            var item = ctrl.Items[e.Index] as LoggingItem;
+            var itemText = item != null ? item.ToString() : string.Empty;
+            var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            var foreColor = isSelected ? Color.White : e.ForeColor;
+            var backColor = isSelected ? Color.Orange : e.BackColor;
             if (item != null)
             {
                 foreColor = isSelected ? item.SelectedForeColor : item.ForeColor;
@@ -495,7 +485,7 @@ namespace TypeLibRegisterCS
                 e.DrawFocusRectangle();
             }
 
-            int itemWidth = (int)e.Graphics.MeasureString(itemText, e.Font).Width;
+            var itemWidth = (int)e.Graphics.MeasureString(itemText, e.Font).Width;
             if (this.maxOfLoggingItemWidth < itemWidth)
             {
                 this.maxOfLoggingItemWidth = itemWidth + SystemInformation.VerticalScrollBarWidth;
@@ -510,8 +500,7 @@ namespace TypeLibRegisterCS
         /// <param name="e">イベントデータを格納している EventArgs。</param>
         private void filterComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var ctrl = sender as ComboBox;
-            if (!ctrl.UseWaitCursor)
+            if (sender is ComboBox ctrl && !ctrl.UseWaitCursor)
             {
                 this.Filter(ctrl.SelectedItem as FilterItem);
             }
@@ -522,7 +511,8 @@ namespace TypeLibRegisterCS
         /// </summary>
         /// <param name="sender">イベントのソースを表す Object。</param>
         /// <param name="e">イベントデータを格納している EventArgs。</param>
-        private void typeLibIdentifierDataGridView_RowStateChanged(object sender, DataGridViewRowStateChangedEventArgs e)
+        private void typeLibIdentifierDataGridView_RowStateChanged(object sender,
+            DataGridViewRowStateChangedEventArgs e)
         {
             if (e.StateChanged == DataGridViewElementStates.Selected)
             {
@@ -540,8 +530,7 @@ namespace TypeLibRegisterCS
         /// <param name="e">イベントデータを格納している EventArgs。</param>
         private void typeLibIdentifierDataGridView_SelectionChanged(object sender, EventArgs e)
         {
-            var view = sender as DataGridView;
-            if (view != null)
+            if (sender is DataGridView view)
             {
                 var selectedCount = view.SelectedRows.Count;
                 this.buttonToDelete.Enabled = selectedCount > 0;
@@ -555,13 +544,11 @@ namespace TypeLibRegisterCS
         /// <param name="e">イベントデータを格納している EventArgs。</param>
         private void typeLibIdentifierDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            var view = sender as DataGridView;
-            if (e.ColumnIndex == 1)
+            if (sender is DataGridView view && e.ColumnIndex == 1)
             {
                 var row = view.Rows[e.RowIndex];
                 var cellStyle = row.DefaultCellStyle;
-                var identifier = row.DataBoundItem as TypeLibIdentifier;
-                if (identifier != null)
+                if (row.DataBoundItem is TypeLibIdentifier identifier)
                 {
                     var foreColor = identifier.IsExistsFile ? cellStyle.ForeColor : Color.DarkRed;
                     cellStyle.ForeColor = foreColor;
@@ -574,30 +561,24 @@ namespace TypeLibRegisterCS
         /// </summary>
         /// <param name="sender">イベントのソースを表す Object。</param>
         /// <param name="e">イベントデータを格納している EventArgs。</param>
-        private void clearTheItemsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
+        private void clearTheItemsToolStripMenuItem_Click(object sender, EventArgs e) =>
             this.loggingListBox.Items.Clear();
-        }
 
         /// <summary>
         /// [Refresh] ボタンがクリックされた場合に発生するイベントのイベントハンドラです。
         /// </summary>
         /// <param name="sender">イベントのソースを表す Object。</param>
         /// <param name="e">イベントデータを格納している EventArgs。</param>
-        private void buttonToRefresh_Click(object sender, EventArgs e)
-        {
+        private void buttonToRefresh_Click(object sender, EventArgs e) =>
             this.Populate(this.filterComboBox.SelectedItem as FilterItem);
-        }
 
         /// <summary>
         /// [SelectAll] ボタンがクリックされた場合に発生するイベントのイベントハンドラです。
         /// </summary>
         /// <param name="sender">イベントのソースを表す Object。</param>
         /// <param name="e">イベントデータを格納している EventArgs。</param>
-        private void buttonToSelectAll_Click(object sender, EventArgs e)
-        {
+        private void buttonToSelectAll_Click(object sender, EventArgs e) =>
             this.typeLibIdentifierDataGridView.SelectAll();
-        }
 
         /// <summary>
         /// [SaveAsXml] ボタンがクリックされた場合に発生するイベントのイベントハンドラです。
@@ -606,14 +587,15 @@ namespace TypeLibRegisterCS
         /// <param name="e">イベントデータを格納している EventArgs。</param>
         private void buttonToSaveAsXml_Click(object sender, EventArgs e)
         {
-            using (SaveFileDialog dialog = new SaveFileDialog())
+            using (var dialog = new SaveFileDialog())
             {
-                dialog.Title = "Save as Xml.";
-                dialog.Filter = "xml files (*.xml)|*.xml|All files (*.*)|*.*";
+                dialog.Title = @"Save as Xml.";
+                dialog.Filter = @"xml files (*.xml)|*.xml|All files (*.*)|*.*";
                 dialog.AutoUpgradeEnabled = true;
                 dialog.RestoreDirectory = false;
                 dialog.ValidateNames = true;
-                dialog.FileName = string.Format(CultureInfo.InvariantCulture, "TypeLibRegister_{0:yyyyMMddHHmmss}.xml", DateTime.Now);
+                dialog.FileName = string.Format(CultureInfo.InvariantCulture, "TypeLibRegister_{0:yyyyMMddHHmmss}.xml",
+                    DateTime.Now);
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
                     var filepathToSave = dialog.FileName;
@@ -632,8 +614,7 @@ namespace TypeLibRegisterCS
             var message = string.Format(
                 CultureInfo.InvariantCulture,
                 "{0} item(s) is selected. Are you sure you want to delete?",
-                this.typeLibIdentifierDataGridView.SelectedRows.Count,
-                Environment.NewLine);
+                this.typeLibIdentifierDataGridView.SelectedRows.Count);
             var dialog = new ExceptionMessageBox(
                 message,
                 "confirmation...",
@@ -641,10 +622,10 @@ namespace TypeLibRegisterCS
                 ExceptionMessageBoxSymbol.Question,
                 ExceptionMessageBoxDefaultButton.Button2,
                 ExceptionMessageBoxOptions.None)
-                {
-                    ShowToolBar = true,
-                    UseOwnerFont = true,
-                };
+            {
+                ShowToolBar = true,
+                UseOwnerFont = true,
+            };
             var dialogResult = dialog.Show(this);
             if (dialogResult == DialogResult.Yes)
             {
@@ -700,67 +681,64 @@ namespace TypeLibRegisterCS
             }
 
             /// <summary>
-            /// ログカテゴリを取得します。
-            /// </summary>
-            /// <value>
-            /// 値を表す<see cref="LoggingCategory"/> 型。
-            /// <para>ログカテゴリ。既定値は LoggingCategory.None です。</para>
-            /// </value>
-            internal LoggingCategory Category { get; private set; }
-
-            /// <summary>
             /// ログメッセージを取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>ログメッセージ。既定値は string.Empty です。</para>
             /// </value>
-            public string Text { get; private set; }
+            public string Text { get; }
+
+            /// <summary>
+            /// ログカテゴリを取得します。
+            /// </summary>
+            /// <value>
+            /// 値を表す<see cref="LoggingCategory" /> 型。
+            /// <para>ログカテゴリ。既定値は LoggingCategory.None です。</para>
+            /// </value>
+            internal LoggingCategory Category { get; }
 
             /// <summary>
             /// 前景色を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="Color"/> 型。
+            /// 値を表す<see cref="Color" /> 型。
             /// <para>前景色。既定値は Color.Empty です。</para>
             /// </value>
-            internal Color ForeColor { get; private set; }
+            internal Color ForeColor { get; }
 
             /// <summary>
             /// 背景色を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="Color"/> 型。
+            /// 値を表す<see cref="Color" /> 型。
             /// <para>背景色。既定値は Color.Empty です。</para>
             /// </value>
-            internal Color BackColor { get; private set; }
+            internal Color BackColor { get; }
 
             /// <summary>
             /// 選択時の前景色を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="Color"/> 型。
+            /// 値を表す<see cref="Color" /> 型。
             /// <para>選択時の前景色。既定値は Color.Empty です。</para>
             /// </value>
-            internal Color SelectedForeColor { get; private set; }
+            internal Color SelectedForeColor { get; }
 
             /// <summary>
             /// 選択時の背景色を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="Color"/> 型。
+            /// 値を表す<see cref="Color" /> 型。
             /// <para>選択時の背景色。既定値は Color.Empty です。</para>
             /// </value>
-            internal Color SelectedBackColor { get; private set; }
+            internal Color SelectedBackColor { get; }
 
             /// <summary>
             /// 現在の System.Object を表す System.String を返します。
             /// </summary>
             /// <returns>現在の System.Object を表す System.String。</returns>
-            public override string ToString()
-            {
-                return this.Text;
-            }
+            public override string ToString() => this.Text;
         }
     }
 }

@@ -7,8 +7,6 @@
 
 #region References
 
-using System;
-
 #endregion
 
 namespace TypeLibRegisterCS.Extensions
@@ -16,7 +14,7 @@ namespace TypeLibRegisterCS.Extensions
     /// <summary>
     /// VerticalAlign の列挙体を表します。
     /// </summary>
-    public enum VerticalAlign : int
+    public enum VerticalAlign
     {
         /// <summary>Top</summary>
         Top,

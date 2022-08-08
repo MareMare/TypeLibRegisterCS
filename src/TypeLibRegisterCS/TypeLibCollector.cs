@@ -10,13 +10,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 using Microsoft.Win32;
 using TypeLibRegisterCS.Configurations;
 using TypeLibRegisterCS.Entities;
@@ -32,14 +30,14 @@ namespace TypeLibRegisterCS
     /// </summary>
     /// <typeparam name="TPayload">コレクションの要素の型。</typeparam>
     /// <param name="payloads">コレクション。</param>
-    internal delegate void EnumerableAction<TPayload>(IEnumerable<TPayload> payloads);
+    internal delegate void EnumerableAction<in TPayload>(IEnumerable<TPayload> payloads);
 
     /// <summary>
     /// 列挙に成功したときの処理を行うデリゲートを表します。
     /// </summary>
     /// <typeparam name="TPayload">コレクションの要素の型。</typeparam>
     /// <returns>コレクション。</returns>
-    internal delegate IEnumerable<TPayload> EnumerableFunc<TPayload>();
+    internal delegate IEnumerable<TPayload> EnumerableFunc<out TPayload>();
 
     /// <summary>
     /// 失敗したときの処理を行うデリゲートを表します。
@@ -73,9 +71,6 @@ namespace TypeLibRegisterCS
     /// </summary>
     internal class TypeLibCollector : IDisposable
     {
-        /// <summary>既に Dispose メソッドが呼び出されているかどうかを表します。</summary>
-        private bool disposed;
-
         /// <summary>現在のインスタンスのロックオブジェクトを表します。</summary>
         private readonly object thisLock = new object();
 
@@ -83,46 +78,43 @@ namespace TypeLibRegisterCS
         private readonly SynchronizationContext context;
 
         /// <summary>HKEY_CLASSES_ROOT\TypeLib へのレジストリキー。</summary>
-        private readonly RegistryKey regkeyToFindOfTLBID;
+        private readonly RegistryKey regkeyToFindOfTlbid;
 
         /// <summary>HKEY_CLASSES_ROOT\CLSID へのレジストリキー。</summary>
-        private readonly RegistryKey regkeyToFindOfCLSID;
+        private readonly RegistryKey regkeyToFindOfClsid;
 
         /// <summary>HKEY_CLASSES_ROOT\Interface へのレジストリキー。</summary>
-        private readonly RegistryKey regkeyToFindOfIID;
+        private readonly RegistryKey regkeyToFindOfIid;
+
+        /// <summary>既に Dispose メソッドが呼び出されているかどうかを表します。</summary>
+        private bool disposed;
 
         /// <summary>
         /// TypeLibCollector クラスの新しいインスタンスを初期化します。
         /// </summary>
         public TypeLibCollector()
         {
-            this.context = WindowsFormsSynchronizationContext.Current;
-            this.regkeyToFindOfTLBID = Registry.ClassesRoot.OpenSubKey("TypeLib");
-            this.regkeyToFindOfCLSID = Registry.ClassesRoot.OpenSubKey("CLSID");
-            this.regkeyToFindOfIID = Registry.ClassesRoot.OpenSubKey("Interface");
-        }
-
-        /// <summary>
-        /// TypeLibCollector クラスのインスタンスが GC に回収される時に呼び出されます。
-        /// </summary>
-        ~TypeLibCollector()
-        {
-            this.Dispose(false);
+            this.context = SynchronizationContext.Current;
+            this.regkeyToFindOfTlbid = Registry.ClassesRoot.OpenSubKey("TypeLib");
+            this.regkeyToFindOfClsid = Registry.ClassesRoot.OpenSubKey("CLSID");
+            this.regkeyToFindOfIid = Registry.ClassesRoot.OpenSubKey("Interface");
         }
 
         /// <summary>
         /// CPU 名を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>CPU 名。既定値は string.Empty です。</para>
         /// </value>
         public static string CpuName
         {
             get
             {
-                string value = string.Empty;
-                value = Registry.GetValue("HKEY_LOCAL_MACHINE\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", "ProcessorNameString", null) as string;
+                var value = Registry.GetValue(
+                    "HKEY_LOCAL_MACHINE\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                    "ProcessorNameString",
+                    null) as string;
                 return value ?? string.Empty;
             }
         }
@@ -131,15 +123,17 @@ namespace TypeLibRegisterCS
         /// CPU Identifier を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>CPU Identifier。既定値は string.Empty です。</para>
         /// </value>
         public static string CpuIdentifier
         {
             get
             {
-                string value = string.Empty;
-                value = Registry.GetValue("HKEY_LOCAL_MACHINE\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", "Identifier", null) as string;
+                var value = Registry.GetValue(
+                    "HKEY_LOCAL_MACHINE\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                    "Identifier",
+                    null) as string;
                 return value ?? string.Empty;
             }
         }
@@ -148,20 +142,22 @@ namespace TypeLibRegisterCS
         /// ログを出力するメソッドのデリゲートを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Action{T1, T2}"/> 型。
+        /// 値を表す<see cref="Action{T1, T2}" /> 型。
         /// <para>ログを出力するメソッドのデリゲート。既定値は null です。</para>
         /// </value>
-        public Action<LoggingCategory, string> ActionToWriteLog
-        {
-            get;
-            set;
-        }
+        public Action<LoggingCategory, string> ActionToWriteLog { get; set; }
 
         /// <summary>
         /// Searches a string using a Microsoft MS-DOS wild card match type.
         /// </summary>
-        /// <param name="filepath">A pointer to a null-terminated string of maximum length MAX_PATH that contains the path to be searched.</param>
-        /// <param name="searchPattern">A pointer to a null-terminated string of maximum length MAX_PATH that contains the file type for which to search.</param>
+        /// <param name="filepath">
+        /// A pointer to a null-terminated string of maximum length MAX_PATH that contains the path to be
+        /// searched.
+        /// </param>
+        /// <param name="searchPattern">
+        /// A pointer to a null-terminated string of maximum length MAX_PATH that contains the file
+        /// type for which to search.
+        /// </param>
         /// <returns>Returns TRUE if the string matches, or FALSE otherwise.</returns>
         public static bool PathMatchSpec(string filepath, string searchPattern)
         {
@@ -170,64 +166,27 @@ namespace TypeLibRegisterCS
         }
 
         /// <summary>
-        /// サブキーを検索します。
-        /// </summary>
-        /// <param name="keyToFind">検索を開始する RegistryKey。</param>
-        /// <returns>RegistryKeyNode のコレクション。</returns>
-        private static IEnumerable<RegistryKeyNode> FindSubKeyNodes(RegistryKey keyToFind)
-        {
-            return TypeLibCollector.RecursiveFindSubKeyNodes(null, keyToFind);
-        }
-
-        /// <summary>
-        /// 再帰的にサブキーを検索します。
-        /// </summary>
-        /// <param name="rootKey">検索を開始したルート情報の RegistryKey。親ルートの場合は null を指定します。</param>
-        /// <param name="parentKey">現在の検索対象となるカレント情報の RegistryKey。</param>
-        /// <returns>RegistryKeyNode のコレクション。</returns>
-        private static IEnumerable<RegistryKeyNode> RecursiveFindSubKeyNodes(RegistryKey rootKey, RegistryKey parentKey)
-        {
-            var foundNodes = new List<RegistryKeyNode>();
-            if (parentKey.SubKeyCount > 0)
-            {
-                foreach (string childKeyName in parentKey.GetSubKeyNames())
-                {
-                    RegistryKey childKey = parentKey.OpenSubKey(childKeyName);
-                    if (childKey != null)
-                    {
-                        var currentRootKey = (rootKey != null) ? rootKey : childKey;
-                        foundNodes.Add(new RegistryKeyNode(currentRootKey, childKey));
-
-                        // Recursive call back into this method
-                        var keyGrandChildren = TypeLibCollector.RecursiveFindSubKeyNodes(currentRootKey, childKey);
-                        foundNodes.AddRange(keyGrandChildren);
-                    }
-                }
-            }
-
-            return foundNodes;
-        }
-
-        /// <summary>
         /// TypeLibIdentifier コレクションを非同期で検索します。
         /// </summary>
         /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
-        public void PopulateAsync(EnumerableAction<TypeLibIdentifier> success, FailureAction failure)
-        {
+        public void PopulateAsync(EnumerableAction<TypeLibIdentifier> success, FailureAction failure) =>
             this.SafeQueueUserWorkItem(
                 () =>
                 {
-                    Stopwatch sw1 = new Stopwatch();
+                    var sw1 = new Stopwatch();
                     sw1.Start();
-                    var foundItems = this.PopulateTypeLibIdentifiers();
+                    var foundItems = this.PopulateTypeLibIdentifiers().ToList();
                     sw1.Stop();
-                    this.WriteLog(LoggingCategory.Debug, "Scan by TLBID completed. {0} item(s) {1} [msec]", foundItems.Count(), sw1.ElapsedMilliseconds);
+                    this.WriteLog(
+                        LoggingCategory.Debug,
+                        "Scan by TLBID completed. {0} item(s) {1} [msec]",
+                        foundItems.Count,
+                        sw1.ElapsedMilliseconds);
                     return foundItems;
                 },
                 success,
                 failure);
-        }
 
         /// <summary>
         /// ExportedTypeLibInformation インスタンスを非同期で XML 形式として保存します。
@@ -237,13 +196,14 @@ namespace TypeLibRegisterCS
         /// <param name="typeLibIdentifiers">保存される TypeLibIdentifier コレクション。</param>
         /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
-        public void SaveAsXmlAsync(string filepathToSave, FilterItem filterItem, IEnumerable<TypeLibIdentifier> typeLibIdentifiers, Action success, FailureAction failure)
+        public void SaveAsXmlAsync(string filepathToSave, FilterItem filterItem,
+            IEnumerable<TypeLibIdentifier> typeLibIdentifiers, Action success, FailureAction failure)
         {
             var items = typeLibIdentifiers.ToList();
             this.SafeQueueUserWorkItem(
                 () =>
                 {
-                    var information = new ExportedTypeLibInformation()
+                    var information = new ExportedTypeLibInformation
                     {
                         Filter = filterItem,
                     };
@@ -267,15 +227,17 @@ namespace TypeLibRegisterCS
         /// <param name="partialReportProgress">部分的に完了したときの進捗報告を行うメソッドのデリゲート。</param>
         /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
-        public void DeleteRegistryAsync(IEnumerable<TypeLibIdentifier> typeLibIdentifiers, Action<TypeLibIdentifier> partialCompleted, Action<double> partialReportProgress, Action success, FailureAction failure)
+        public void DeleteRegistryAsync(IEnumerable<TypeLibIdentifier> typeLibIdentifiers,
+            Action<TypeLibIdentifier> partialCompleted, Action<double> partialReportProgress, Action success,
+            FailureAction failure)
         {
-            Action<TypeLibIdentifier> partialCompletedInternal = (identifier) =>
+            Action<TypeLibIdentifier> partialCompletedInternal = identifier =>
             {
-                this.context.Send((stateOfContext) => partialCompleted(identifier), null);
+                this.context.Send(stateOfContext => partialCompleted(identifier), null);
             };
-            Action<double> partialReportProgressInternal = (percentComplete) =>
+            Action<double> partialReportProgressInternal = percentComplete =>
             {
-                this.context.Send((stateOfContext) => partialReportProgress(percentComplete), null);
+                this.context.Send(stateOfContext => partialReportProgress(percentComplete), null);
             };
 
             var items = typeLibIdentifiers.ToList();
@@ -285,371 +247,16 @@ namespace TypeLibRegisterCS
                     // 各要素がまだ構築されていない TypeLibIdentifier インスタンスを構築します。
                     this.ConstructIfNotYet(items);
 
-                    Stopwatch sw1 = new Stopwatch();
+                    var sw1 = new Stopwatch();
                     sw1.Start();
                     this.DeleteRegistry(items, partialCompletedInternal, partialReportProgressInternal);
                     sw1.Stop();
-                    this.WriteLog(LoggingCategory.Debug, "Deletion from registry completed. {0} item(s) {1} [msec]", items.Count, sw1.ElapsedMilliseconds);
+                    this.WriteLog(LoggingCategory.Debug, "Deletion from registry completed. {0} item(s) {1} [msec]",
+                        items.Count, sw1.ElapsedMilliseconds);
                     Thread.Sleep(2 * 1000);
                 },
                 success,
                 failure);
-        }
-
-        /// <summary>
-        /// ログを出力します。
-        /// </summary>
-        /// <param name="category">ログのカテゴリ。</param>
-        /// <param name="format">メッセージの複合書式指定文字列。</param>
-        /// <param name="args">0 個以上の書式設定対象オブジェクトを含んだ Object 配列。</param>
-        private void WriteLog(LoggingCategory category, string format, params object[] args)
-        {
-            Debug.Print(format, args);
-            if (this.ActionToWriteLog != null)
-            {
-                this.context.Post(
-                    (stateOfContext) =>
-                    {
-                        var builder = new StringBuilder();
-                        builder.AppendFormat(CultureInfo.InvariantCulture, format, args);
-                        this.ActionToWriteLog(category, builder.ToString());
-                    },
-                    null);
-            }
-        }
-
-        /// <summary>
-        /// HKEY_CLASSES_ROOT\TypeLib のすべてを検索し TypeLibIdentifier コレクションを生成します。
-        /// </summary>
-        /// <returns>検索結果の TypeLibIdentifier コレクション。</returns>
-        private IEnumerable<TypeLibIdentifier> PopulateTypeLibIdentifiers()
-        {
-            // filepath:
-            //      registry key = HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}\1.0\0\win32
-            //      value name   = string.Empty
-            // version:
-            //      registry key = HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}\1.0
-            // name:
-            //      registry key = HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}\1.0
-            //      value name   = string.Empty
-            var nodesOfTLBID = TypeLibCollector.FindSubKeyNodes(this.regkeyToFindOfTLBID);
-            var queryOfTLBID = from node in nodesOfTLBID
-                               let value = node.GetValueText()
-                               where node.EndsWith(@"\win32")
-                               select new { Node = node, FilePath = value, };
-
-            var query = queryOfTLBID
-                .Select((item) =>
-                {
-                    var elements = item.Node.KeyElementsOfCurrent.ToList();
-                    var elementsOfVersion = elements.Take(elements.Count - 2);
-                    var keyOfVersion = elementsOfVersion.Aggregate((working, next) => working + '\\' + next);
-                    var name = Registry.GetValue(keyOfVersion, string.Empty, string.Empty) as string;
-                    return new TypeLibIdentifier()
-                    {
-                        RegistryPath = item.Node.RootPath,
-                        Tlbid = item.Node.LastSubkeyNameOfRoot,
-                        FilePath = item.FilePath,
-                        Name = name,
-                        Version = elementsOfVersion.LastOrDefault() ?? string.Empty,
-                    };
-                })
-                .OrderBy((identifier) => identifier.DisplayName)
-                .ThenBy((identifier) => identifier.Version);
-
-            return query.ToList();
-        }
-
-        /// <summary>
-        /// 各要素がまだ構築されていない TypeLibIdentifier インスタンスを構築します。
-        /// </summary>
-        /// <param name="typeLibIdentifiers">構築される TypeLibIdentifier コレクション。</param>
-        private void ConstructIfNotYet(IEnumerable<TypeLibIdentifier> typeLibIdentifiers)
-        {
-            var itemsOfNotYetCLSID = typeLibIdentifiers
-                .Where((item) => !item.IsConstructedClassIdentifiers)
-                .ToList();
-            var itemsOfNotYetIID = typeLibIdentifiers
-                .Where((item) => !item.IsConstructedInterfaceIdentifiers)
-                .ToList();
-
-            Stopwatch sw1 = new Stopwatch();
-            sw1.Start();
-            this.ConcreteConstructFromCLSID(itemsOfNotYetCLSID);
-            sw1.Stop();
-            this.WriteLog(LoggingCategory.Debug, "Scan by CLSID completed. {0} item(s) {1} [msec]", itemsOfNotYetCLSID.Count, sw1.ElapsedMilliseconds);
-
-            Stopwatch sw2 = new Stopwatch();
-            sw2.Start();
-            this.ConcreteConstructFromIID(itemsOfNotYetIID);
-            sw2.Stop();
-            this.WriteLog(LoggingCategory.Debug, "Scan by IID completed. {0} item(s) {1} [msec]", itemsOfNotYetIID.Count, sw2.ElapsedMilliseconds);
-        }
-
-        /// <summary>
-        /// HKEY_CLASSES_ROOT\CLSID より指定された TypeLibIdentifier に関連する内容を構築します。
-        /// </summary>
-        /// <param name="typeLibIdentifiers">構築される TypeLibIdentifier コレクション。</param>
-        private void ConcreteConstructFromCLSID(IEnumerable<TypeLibIdentifier> typeLibIdentifiers)
-        {
-            // TLBID:
-            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}\TypeLib
-            //      value name      = string.Empty
-            // CLSID:
-            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}
-            // ProgID:
-            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}\ProgID
-            //      value name      = string.Empty
-            // VersionIndependentProgID:
-            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}\VersionIndependentProgID
-            //      value name      = string.Empty
-            var nodesOfCLSID = TypeLibCollector.FindSubKeyNodes(this.regkeyToFindOfCLSID);
-            var queryOfCLSID = from node in nodesOfCLSID
-                               let value = node.GetValueText()
-                               where node.EndsWith(@"\typelib")
-                               select new { Node = node, TLBID = value, };
-
-            var lookupOfCLSID = queryOfCLSID.ToLookup((item) => item.TLBID.ToUpperInvariant());
-            foreach (var identifierToConstruct in typeLibIdentifiers)
-            {
-                var tlbid = identifierToConstruct.Tlbid.ToUpperInvariant();
-                if (lookupOfCLSID.Contains(tlbid))
-                {
-                    var query = lookupOfCLSID[tlbid]
-                        .Select((item) =>
-                        {
-                            var keyOfCLSID = item.Node.RootPath;
-                            var progID = Registry.GetValue(keyOfCLSID + @"\ProgID", string.Empty, string.Empty) as string;
-                            var versionIndependentProgID = Registry.GetValue(keyOfCLSID + @"\VersionIndependent", string.Empty, string.Empty) as string;
-                            return new ClassIdentifier()
-                            {
-                                RegistryPath = item.Node.RootPath,
-                                Clsid = item.Node.LastSubkeyNameOfRoot,
-                                ProgId = progID,
-                                VersionIndependentProgId = versionIndependentProgID,
-                                Tlbid = item.TLBID,
-                            };
-                        })
-                        .ToList();
-                    query.ForEach((identifier, index) =>
-                        identifierToConstruct.ClassIdentifiers.Add(identifier));
-                }
-
-                // 構築されたことを設定します。
-                identifierToConstruct.IsConstructedClassIdentifiers = true;
-            }
-        }
-
-        /// <summary>
-        /// HKEY_CLASSES_ROOT\Interface より指定された TypeLibIdentifier に関連する内容を構築します。
-        /// </summary>
-        /// <param name="typeLibIdentifiers">構築される TypeLibIdentifier コレクション。</param>
-        private void ConcreteConstructFromIID(IEnumerable<TypeLibIdentifier> typeLibIdentifiers)
-        {
-            // TLBID:
-            //      registry key    = HKEY_CLASSES_ROOT\Interface\{038374FF-098B-11D8-9414-505054503030}\TypeLib
-            //      value name      = string.Empty
-            // IID:
-            //      registry key    = HKEY_CLASSES_ROOT\Interface\{038374FF-098B-11D8-9414-505054503030}
-            var nodesOfIID = TypeLibCollector.FindSubKeyNodes(this.regkeyToFindOfIID);
-            var queryOfIID = from node in nodesOfIID
-                               let value = node.GetValueText()
-                               where node.EndsWith(@"\typelib")
-                               select new { Node = node, TLBID = value, };
-
-            var lookupOfIID = queryOfIID.ToLookup((item) => item.TLBID.ToUpperInvariant());
-            foreach (var identifierToConstruct in typeLibIdentifiers)
-            {
-                var tlbid = identifierToConstruct.Tlbid.ToUpperInvariant();
-                if (lookupOfIID.Contains(tlbid))
-                {
-                    var query = lookupOfIID[tlbid]
-                        .Select((item) =>
-                        {
-                            return new InterfaceIdentifier()
-                            {
-                                RegistryPath = item.Node.RootPath,
-                                Iid = item.Node.LastSubkeyNameOfRoot,
-                                Tlbid = item.TLBID,
-                            };
-                        })
-                        .ToList();
-                    query.ForEach((identifier, index) =>
-                        identifierToConstruct.InterfaceIdentifiers.Add(identifier));
-                }
-
-                // 構築されたことを設定します。
-                identifierToConstruct.IsConstructedInterfaceIdentifiers = true;
-            }
-        }
-
-        /// <summary>
-        /// TypeLibIdentifier コレクションで構成される各レジストリを削除します。
-        /// </summary>
-        /// <param name="typeLibIdentifiers">削除される TypeLibIdentifier コレクション。</param>
-        /// <param name="partialCompleted">部分的に完了したときの処理を行うメソッドのデリゲート。</param>
-        /// <param name="partialReportProgress">部分的に完了したときの進捗報告を行うメソッドのデリゲート。</param>
-        private void DeleteRegistry(IEnumerable<TypeLibIdentifier> typeLibIdentifiers, Action<TypeLibIdentifier> partialCompleted, Action<double> partialReportProgress)
-        {
-            Action<int, int> partialReportProgressInternal = (partial, total) =>
-            {
-                double percent = 100 * partial / total;
-                partialReportProgress(percent);
-            };
-
-            var partialCount = 0;
-            var totalCount = typeLibIdentifiers.Count();
-            foreach (var typeLibIdentifier in typeLibIdentifiers)
-            {
-                this.DeleteRegistry(typeLibIdentifier);
-                partialCount++;
-                partialReportProgressInternal(partialCount, totalCount);
-                partialCompleted(typeLibIdentifier);
-            }
-        }
-
-        /// <summary>
-        /// TypeLibIdentifier インスタンスで構成される各レジストリを削除します。
-        /// </summary>
-        /// <param name="typeLibIdentifier">削除される TypeLibIdentifier インスタンス。</param>
-        private void DeleteRegistry(TypeLibIdentifier typeLibIdentifier)
-        {
-            // VersionIndependentProgID: HKEY_CLASSES_ROOT\PLA.TraceDataProviderCollection
-            var queryOfVersionIndependentProgID = typeLibIdentifier
-                .ClassIdentifiers
-                .Where((identifier) => !string.IsNullOrEmpty(identifier.VersionIndependentProgId))
-                .Select((identifier) => string.Format(CultureInfo.InvariantCulture, @"{0}\{1}", Registry.ClassesRoot.Name, identifier.VersionIndependentProgId));
-
-            // ProgID: HKEY_CLASSES_ROOT\PLA.TraceDataProviderCollection.1
-            var queryOfProgID = typeLibIdentifier
-                .ClassIdentifiers
-                .Where((identifier) => !string.IsNullOrEmpty(identifier.ProgId))
-                .Select((identifier) => string.Format(CultureInfo.InvariantCulture, @"{0}\{1}", Registry.ClassesRoot.Name, identifier.ProgId));
-
-            // CLSID: HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}
-            var queryOfCLSID = typeLibIdentifier
-                .ClassIdentifiers
-                .Where((identifier) => !string.IsNullOrEmpty(identifier.RegistryPath))
-                .Select((identifier) => identifier.RegistryPath);
-
-            // IID: HKEY_CLASSES_ROOT\Interface\{038374FF-098B-11D8-9414-505054503030}
-            var queryOfIID = typeLibIdentifier
-                .InterfaceIdentifiers
-                .Where((identifier) => !string.IsNullOrEmpty(identifier.RegistryPath))
-                .Select((identifier) => identifier.RegistryPath);
-
-            // TLBID: HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}
-            var queryOfTLBID = new List<string>() { typeLibIdentifier.RegistryPath };
-
-            var registryPathsToDelete = new List<string>();
-            registryPathsToDelete.AddRange(queryOfVersionIndependentProgID);
-            registryPathsToDelete.AddRange(queryOfProgID);
-            registryPathsToDelete.AddRange(queryOfCLSID);
-            registryPathsToDelete.AddRange(queryOfIID);
-            registryPathsToDelete.AddRange(queryOfTLBID);
-            foreach (var registryPath in registryPathsToDelete)
-            {
-                this.DeleteRegistrySubKeyTree(typeLibIdentifier, registryPath);
-            }
-        }
-
-        /// <summary>
-        /// サブキーとその子サブキーを再帰的に削除します。文字列 subkey では、大文字と小文字は区別されません。
-        /// </summary>
-        /// <param name="typeLibIdentifier">削除される TypeLibIdentifier インスタンス。</param>
-        /// <param name="registryPath">削除するレジストリのパス。</param>
-        private void DeleteRegistrySubKeyTree(TypeLibIdentifier typeLibIdentifier, string registryPath)
-        {
-            string[] elements = registryPath.Split('\\');
-            string hiveText = elements.First().ToUpperInvariant();
-            string subKey = string.Join(@"\", elements, 1, elements.Length - 1);
-            RegistryKey rootRegistry = null;
-            switch (hiveText)
-            {
-                case "HKEY_CLASSES_ROOT":
-                case "HKCR":
-                    rootRegistry = Registry.ClassesRoot;
-                    break;
-                case "HKEY_CURRENT_USER":
-                case "HKCU":
-                    rootRegistry = Registry.CurrentUser;
-                    break;
-                case "HKEY_LOCAL_MACHINE":
-                case "HKLM":
-                    rootRegistry = Registry.LocalMachine;
-                    break;
-                case "HKEY_USERS":
-                    rootRegistry = Registry.Users;
-                    break;
-                case "HKEY_CURRENT_CONFIG":
-                    rootRegistry = Registry.CurrentConfig;
-                    break;
-                default:
-                    throw new NotSupportedException("The registry hive '" + hiveText + "' is not supported.");
-            }
-
-            try
-            {
-                // ほんまに削除します。
-                rootRegistry.DeleteSubKeyTree(subKey);
-                //this.WriteLog(LoggingCategory.Debug, @"'{0}\{1}' of '{2}' successfully deleted from the registry.", rootRegistry.Name, subKey, typeLibIdentifier.DisplayName);    // 遅すぎ
-                Debug.Print(@"'{0}\{1}' of '{2}' successfully deleted from the registry.", rootRegistry.Name, subKey, typeLibIdentifier.DisplayName);
-            }
-            catch (Exception ex)
-            {
-                this.WriteLog(LoggingCategory.Error, @"'{0}\{1}' of '{2}' failed to delete from the registry. {3}", rootRegistry.Name, subKey, typeLibIdentifier.DisplayName, ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// 指定されたメソッドのデリゲートを非同期呼び出しします。
-        /// これは ThreadPool.QueueUserWorkItem() を使用して success または failure の各デリゲートはメインスレッド上で実行されます。
-        /// </summary>
-        /// <typeparam name="TPayload">列挙されるコレクションの要素の型。</typeparam>
-        /// <param name="action">非同期操作としてコレクションを取得するメソッドのデリゲート。</param>
-        /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
-        /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
-        private void SafeQueueUserWorkItem<TPayload>(EnumerableFunc<TPayload> action, EnumerableAction<TPayload> success, FailureAction failure)
-        {
-            ThreadPool.QueueUserWorkItem(
-                (stateOfPool) =>
-                {
-                    try
-                    {
-                        var payloads = action();
-                        this.context.Post((stateOfContext) => success(payloads), null);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.context.Post((stateOfContext) => failure(ex), null);
-                    }
-                },
-                null);
-        }
-
-        /// <summary>
-        /// 指定されたメソッドのデリゲートを非同期呼び出しします。
-        /// これは ThreadPool.QueueUserWorkItem() を使用して success または failure の各デリゲートはメインスレッド上で実行されます。
-        /// </summary>
-        /// <param name="action">非同期操作としてコレクションを取得するメソッドのデリゲート。</param>
-        /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
-        /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
-        private void SafeQueueUserWorkItem(Action action, Action success, FailureAction failure)
-        {
-            ThreadPool.QueueUserWorkItem(
-                (stateOfPool) =>
-                {
-                    try
-                    {
-                        action();
-                        this.context.Post((stateOfContext) => success(), null);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.context.Post((stateOfContext) => failure(ex), null);
-                    }
-                },
-                null);
         }
 
         /// <summary>
@@ -681,9 +288,9 @@ namespace TypeLibRegisterCS
                     // 例）
                     // ((IDisposable)this.disposableSomeField1).Close();
                     // ((IDisposable)this.disposableSomeField2).Dispose();
-                    this.regkeyToFindOfTLBID.Close();
-                    this.regkeyToFindOfCLSID.Close();
-                    this.regkeyToFindOfIID.Close();
+                    this.regkeyToFindOfTlbid.Close();
+                    this.regkeyToFindOfClsid.Close();
+                    this.regkeyToFindOfIid.Close();
                 }
 
                 // アンマネージ リソース (IDisposable の非実装インスタンス) の解放処理をこの位置に記述します。
@@ -694,6 +301,422 @@ namespace TypeLibRegisterCS
         }
 
         /// <summary>
+        /// サブキーを検索します。
+        /// </summary>
+        /// <param name="keyToFind">検索を開始する RegistryKey。</param>
+        /// <returns>RegistryKeyNode のコレクション。</returns>
+        private static IEnumerable<RegistryKeyNode> FindSubKeyNodes(RegistryKey keyToFind) =>
+            TypeLibCollector.RecursiveFindSubKeyNodes(null, keyToFind);
+
+        /// <summary>
+        /// 再帰的にサブキーを検索します。
+        /// </summary>
+        /// <param name="rootKey">検索を開始したルート情報の RegistryKey。親ルートの場合は null を指定します。</param>
+        /// <param name="parentKey">現在の検索対象となるカレント情報の RegistryKey。</param>
+        /// <returns>RegistryKeyNode のコレクション。</returns>
+        private static IEnumerable<RegistryKeyNode> RecursiveFindSubKeyNodes(RegistryKey rootKey, RegistryKey parentKey)
+        {
+            var foundNodes = new List<RegistryKeyNode>();
+            if (parentKey.SubKeyCount > 0)
+            {
+                foreach (var childKeyName in parentKey.GetSubKeyNames())
+                {
+                    var childKey = parentKey.OpenSubKey(childKeyName);
+                    if (childKey != null)
+                    {
+                        var currentRootKey = rootKey != null ? rootKey : childKey;
+                        foundNodes.Add(new RegistryKeyNode(currentRootKey, childKey));
+
+                        // Recursive call back into this method
+                        var keyGrandChildren = TypeLibCollector.RecursiveFindSubKeyNodes(currentRootKey, childKey);
+                        foundNodes.AddRange(keyGrandChildren);
+                    }
+                }
+            }
+
+            return foundNodes;
+        }
+
+        /// <summary>
+        /// ログを出力します。
+        /// </summary>
+        /// <param name="category">ログのカテゴリ。</param>
+        /// <param name="format">メッセージの複合書式指定文字列。</param>
+        /// <param name="args">0 個以上の書式設定対象オブジェクトを含んだ Object 配列。</param>
+        private void WriteLog(LoggingCategory category, string format, params object[] args)
+        {
+            Debug.Print(format, args);
+            if (this.ActionToWriteLog != null)
+            {
+                this.context.Post(
+                    stateOfContext =>
+                    {
+                        var builder = new StringBuilder();
+                        builder.AppendFormat(CultureInfo.InvariantCulture, format, args);
+                        this.ActionToWriteLog(category, builder.ToString());
+                    },
+                    null);
+            }
+        }
+
+        /// <summary>
+        /// HKEY_CLASSES_ROOT\TypeLib のすべてを検索し TypeLibIdentifier コレクションを生成します。
+        /// </summary>
+        /// <returns>検索結果の TypeLibIdentifier コレクション。</returns>
+        private IEnumerable<TypeLibIdentifier> PopulateTypeLibIdentifiers()
+        {
+            // filepath:
+            //      registry key = HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}\1.0\0\win32
+            //      value name   = string.Empty
+            // version:
+            //      registry key = HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}\1.0
+            // name:
+            //      registry key = HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}\1.0
+            //      value name   = string.Empty
+            var nodesOfTlbid = TypeLibCollector.FindSubKeyNodes(this.regkeyToFindOfTlbid);
+            var queryOfTlbid = from node in nodesOfTlbid
+                let value = node.GetValueText()
+                where node.EndsWith(@"\win32")
+                select new { Node = node, FilePath = value };
+
+            var query = queryOfTlbid
+                .Select(item =>
+                {
+                    var elements = item.Node.KeyElementsOfCurrent.ToList();
+                    var elementsOfVersion = elements.Take(elements.Count - 2).ToList();
+                    var keyOfVersion = elementsOfVersion.Aggregate((working, next) => working + '\\' + next);
+                    var name = Registry.GetValue(keyOfVersion, string.Empty, string.Empty) as string;
+                    return new TypeLibIdentifier
+                    {
+                        RegistryPath = item.Node.RootPath,
+                        Tlbid = item.Node.LastSubkeyNameOfRoot,
+                        FilePath = item.FilePath,
+                        Name = name,
+                        Version = elementsOfVersion.LastOrDefault() ?? string.Empty,
+                    };
+                })
+                .OrderBy(identifier => identifier.DisplayName)
+                .ThenBy(identifier => identifier.Version);
+
+            return query.ToList();
+        }
+
+        /// <summary>
+        /// 各要素がまだ構築されていない TypeLibIdentifier インスタンスを構築します。
+        /// </summary>
+        /// <param name="typeLibIdentifiers">構築される TypeLibIdentifier コレクション。</param>
+        private void ConstructIfNotYet(ICollection<TypeLibIdentifier> typeLibIdentifiers)
+        {
+            var itemsOfNotYetClsid = typeLibIdentifiers
+                .Where(item => !item.IsConstructedClassIdentifiers)
+                .ToList();
+            var itemsOfNotYetIid = typeLibIdentifiers
+                .Where(item => !item.IsConstructedInterfaceIdentifiers)
+                .ToList();
+
+            var sw1 = new Stopwatch();
+            sw1.Start();
+            this.ConcreteConstructFromClsid(itemsOfNotYetClsid);
+            sw1.Stop();
+            this.WriteLog(LoggingCategory.Debug, "Scan by CLSID completed. {0} item(s) {1} [msec]",
+                itemsOfNotYetClsid.Count, sw1.ElapsedMilliseconds);
+
+            var sw2 = new Stopwatch();
+            sw2.Start();
+            this.ConcreteConstructFromIid(itemsOfNotYetIid);
+            sw2.Stop();
+            this.WriteLog(LoggingCategory.Debug, "Scan by IID completed. {0} item(s) {1} [msec]",
+                itemsOfNotYetIid.Count, sw2.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// HKEY_CLASSES_ROOT\CLSID より指定された TypeLibIdentifier に関連する内容を構築します。
+        /// </summary>
+        /// <param name="typeLibIdentifiers">構築される TypeLibIdentifier コレクション。</param>
+        private void ConcreteConstructFromClsid(IEnumerable<TypeLibIdentifier> typeLibIdentifiers)
+        {
+            // TLBID:
+            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}\TypeLib
+            //      value name      = string.Empty
+            // CLSID:
+            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}
+            // ProgID:
+            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}\ProgID
+            //      value name      = string.Empty
+            // VersionIndependentProgID:
+            //      registry key    = HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}\VersionIndependentProgID
+            //      value name      = string.Empty
+            var nodesOfClsid = TypeLibCollector.FindSubKeyNodes(this.regkeyToFindOfClsid);
+            var queryOfClsid = from node in nodesOfClsid
+                let value = node.GetValueText()
+                where node.EndsWith(@"\typelib")
+                select new { Node = node, TLBID = value };
+
+            var lookupOfClsid = queryOfClsid.ToLookup(item => item.TLBID.ToUpperInvariant());
+            foreach (var identifierToConstruct in typeLibIdentifiers)
+            {
+                var tlbid = identifierToConstruct.Tlbid.ToUpperInvariant();
+                if (lookupOfClsid.Contains(tlbid))
+                {
+                    var query = lookupOfClsid[tlbid]
+                        .Select(item =>
+                        {
+                            var keyOfClsid = item.Node.RootPath;
+                            var progId
+                                = Registry.GetValue(keyOfClsid + @"\ProgID", string.Empty, string.Empty) as string;
+                            var versionIndependentProgId = Registry.GetValue(keyOfClsid + @"\VersionIndependent",
+                                string.Empty, string.Empty) as string;
+                            return new ClassIdentifier
+                            {
+                                RegistryPath = item.Node.RootPath,
+                                Clsid = item.Node.LastSubkeyNameOfRoot,
+                                ProgId = progId,
+                                VersionIndependentProgId = versionIndependentProgId,
+                                Tlbid = item.TLBID,
+                            };
+                        })
+                        .ToList();
+                    query.ForEach((identifier, index) =>
+                        identifierToConstruct.ClassIdentifiers.Add(identifier));
+                }
+
+                // 構築されたことを設定します。
+                identifierToConstruct.IsConstructedClassIdentifiers = true;
+            }
+        }
+
+        /// <summary>
+        /// HKEY_CLASSES_ROOT\Interface より指定された TypeLibIdentifier に関連する内容を構築します。
+        /// </summary>
+        /// <param name="typeLibIdentifiers">構築される TypeLibIdentifier コレクション。</param>
+        private void ConcreteConstructFromIid(IEnumerable<TypeLibIdentifier> typeLibIdentifiers)
+        {
+            // TLBID:
+            //      registry key    = HKEY_CLASSES_ROOT\Interface\{038374FF-098B-11D8-9414-505054503030}\TypeLib
+            //      value name      = string.Empty
+            // IID:
+            //      registry key    = HKEY_CLASSES_ROOT\Interface\{038374FF-098B-11D8-9414-505054503030}
+            var nodesOfIid = TypeLibCollector.FindSubKeyNodes(this.regkeyToFindOfIid);
+            var queryOfIid = from node in nodesOfIid
+                let value = node.GetValueText()
+                where node.EndsWith(@"\typelib")
+                select new { Node = node, TLBID = value };
+
+            var lookupOfIid = queryOfIid.ToLookup(item => item.TLBID.ToUpperInvariant());
+            foreach (var identifierToConstruct in typeLibIdentifiers)
+            {
+                var tlbid = identifierToConstruct.Tlbid.ToUpperInvariant();
+                if (lookupOfIid.Contains(tlbid))
+                {
+                    var query = lookupOfIid[tlbid]
+                        .Select(item => new InterfaceIdentifier
+                        {
+                            RegistryPath = item.Node.RootPath,
+                            Iid = item.Node.LastSubkeyNameOfRoot,
+                            Tlbid = item.TLBID,
+                        })
+                        .ToList();
+                    query.ForEach((identifier, index) =>
+                        identifierToConstruct.InterfaceIdentifiers.Add(identifier));
+                }
+
+                // 構築されたことを設定します。
+                identifierToConstruct.IsConstructedInterfaceIdentifiers = true;
+            }
+        }
+
+        /// <summary>
+        /// TypeLibIdentifier コレクションで構成される各レジストリを削除します。
+        /// </summary>
+        /// <param name="typeLibIdentifiers">削除される TypeLibIdentifier コレクション。</param>
+        /// <param name="partialCompleted">部分的に完了したときの処理を行うメソッドのデリゲート。</param>
+        /// <param name="partialReportProgress">部分的に完了したときの進捗報告を行うメソッドのデリゲート。</param>
+        private void DeleteRegistry(ICollection<TypeLibIdentifier> typeLibIdentifiers,
+            Action<TypeLibIdentifier> partialCompleted, Action<double> partialReportProgress)
+        {
+            void PartialReportProgressInternal(int partial, int total)
+            {
+                var percent = 100d * partial / total;
+                partialReportProgress(percent);
+            }
+
+            var partialCount = 0;
+            var totalCount = typeLibIdentifiers.Count;
+            foreach (var typeLibIdentifier in typeLibIdentifiers)
+            {
+                this.DeleteRegistry(typeLibIdentifier);
+                partialCount++;
+                PartialReportProgressInternal(partialCount, totalCount);
+                partialCompleted(typeLibIdentifier);
+            }
+        }
+
+        /// <summary>
+        /// TypeLibIdentifier インスタンスで構成される各レジストリを削除します。
+        /// </summary>
+        /// <param name="typeLibIdentifier">削除される TypeLibIdentifier インスタンス。</param>
+        private void DeleteRegistry(TypeLibIdentifier typeLibIdentifier)
+        {
+            // VersionIndependentProgID: HKEY_CLASSES_ROOT\PLA.TraceDataProviderCollection
+            var queryOfVersionIndependentProgId = typeLibIdentifier
+                .ClassIdentifiers
+                .Where(identifier => !string.IsNullOrEmpty(identifier.VersionIndependentProgId))
+                .Select(identifier => string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"{0}\{1}",
+                    Registry.ClassesRoot.Name,
+                    identifier.VersionIndependentProgId));
+
+            // ProgID: HKEY_CLASSES_ROOT\PLA.TraceDataProviderCollection.1
+            var queryOfProgId = typeLibIdentifier
+                .ClassIdentifiers
+                .Where(identifier => !string.IsNullOrEmpty(identifier.ProgId))
+                .Select(identifier => string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"{0}\{1}",
+                    Registry.ClassesRoot.Name,
+                    identifier.ProgId));
+
+            // CLSID: HKEY_CLASSES_ROOT\CLSID\{03837511-098B-11D8-9414-505054503030}
+            var queryOfClsid = typeLibIdentifier
+                .ClassIdentifiers
+                .Where(identifier => !string.IsNullOrEmpty(identifier.RegistryPath))
+                .Select(identifier => identifier.RegistryPath);
+
+            // IID: HKEY_CLASSES_ROOT\Interface\{038374FF-098B-11D8-9414-505054503030}
+            var queryOfIid = typeLibIdentifier
+                .InterfaceIdentifiers
+                .Where(identifier => !string.IsNullOrEmpty(identifier.RegistryPath))
+                .Select(identifier => identifier.RegistryPath);
+
+            // TLBID: HKEY_CLASSES_ROOT\TypeLib\{03837500-098B-11D8-9414-505054503030}
+            var queryOfTlbid = new List<string>
+                { typeLibIdentifier.RegistryPath };
+
+            var registryPathsToDelete = new List<string>();
+            registryPathsToDelete.AddRange(queryOfVersionIndependentProgId);
+            registryPathsToDelete.AddRange(queryOfProgId);
+            registryPathsToDelete.AddRange(queryOfClsid);
+            registryPathsToDelete.AddRange(queryOfIid);
+            registryPathsToDelete.AddRange(queryOfTlbid);
+            foreach (var registryPath in registryPathsToDelete)
+            {
+                this.DeleteRegistrySubKeyTree(typeLibIdentifier, registryPath);
+            }
+        }
+
+        /// <summary>
+        /// サブキーとその子サブキーを再帰的に削除します。文字列 subkey では、大文字と小文字は区別されません。
+        /// </summary>
+        /// <param name="typeLibIdentifier">削除される TypeLibIdentifier インスタンス。</param>
+        /// <param name="registryPath">削除するレジストリのパス。</param>
+        private void DeleteRegistrySubKeyTree(TypeLibIdentifier typeLibIdentifier, string registryPath)
+        {
+            var elements = registryPath.Split('\\');
+            var hiveText = elements.First().ToUpperInvariant();
+            var subKey = string.Join(@"\", elements, 1, elements.Length - 1);
+            RegistryKey rootRegistry;
+            switch (hiveText)
+            {
+                case "HKEY_CLASSES_ROOT":
+                case "HKCR":
+                    rootRegistry = Registry.ClassesRoot;
+                    break;
+                case "HKEY_CURRENT_USER":
+                case "HKCU":
+                    rootRegistry = Registry.CurrentUser;
+                    break;
+                case "HKEY_LOCAL_MACHINE":
+                case "HKLM":
+                    rootRegistry = Registry.LocalMachine;
+                    break;
+                case "HKEY_USERS":
+                    rootRegistry = Registry.Users;
+                    break;
+                case "HKEY_CURRENT_CONFIG":
+                    rootRegistry = Registry.CurrentConfig;
+                    break;
+                default:
+                    throw new NotSupportedException("The registry hive '" + hiveText + "' is not supported.");
+            }
+
+            try
+            {
+                // ほんまに削除します。
+                rootRegistry.DeleteSubKeyTree(subKey);
+                //this.WriteLog(LoggingCategory.Debug, @"'{0}\{1}' of '{2}' successfully deleted from the registry.", rootRegistry.Name, subKey, typeLibIdentifier.DisplayName);    // 遅すぎ
+                Debug.Print(@"'{0}\{1}' of '{2}' successfully deleted from the registry.", rootRegistry.Name, subKey,
+                    typeLibIdentifier.DisplayName);
+            }
+            catch (Exception ex)
+            {
+                this.WriteLog(
+                    LoggingCategory.Error,
+                    @"'{0}\{1}' of '{2}' failed to delete from the registry. {3}",
+                    rootRegistry.Name,
+                    subKey,
+                    typeLibIdentifier.DisplayName,
+                    ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 指定されたメソッドのデリゲートを非同期呼び出しします。
+        /// これは ThreadPool.QueueUserWorkItem() を使用して success または failure の各デリゲートはメインスレッド上で実行されます。
+        /// </summary>
+        /// <typeparam name="TPayload">列挙されるコレクションの要素の型。</typeparam>
+        /// <param name="action">非同期操作としてコレクションを取得するメソッドのデリゲート。</param>
+        /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
+        /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
+        private void SafeQueueUserWorkItem<TPayload>(EnumerableFunc<TPayload> action,
+            EnumerableAction<TPayload> success, FailureAction failure) =>
+            ThreadPool.QueueUserWorkItem(
+                stateOfPool =>
+                {
+                    try
+                    {
+                        var payloads = action();
+                        this.context.Post(stateOfContext => success(payloads), null);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.context.Post(stateOfContext => failure(ex), null);
+                    }
+                },
+                null);
+
+        /// <summary>
+        /// 指定されたメソッドのデリゲートを非同期呼び出しします。
+        /// これは ThreadPool.QueueUserWorkItem() を使用して success または failure の各デリゲートはメインスレッド上で実行されます。
+        /// </summary>
+        /// <param name="action">非同期操作としてコレクションを取得するメソッドのデリゲート。</param>
+        /// <param name="success">成功したときの処理を行うメソッドのデリゲート。</param>
+        /// <param name="failure">例外検出したときの処理を行うメソッドのデリゲート。</param>
+        private void SafeQueueUserWorkItem(Action action, Action success, FailureAction failure) =>
+            ThreadPool.QueueUserWorkItem(
+                stateOfPool =>
+                {
+                    try
+                    {
+                        action();
+                        this.context.Post(stateOfContext => success(), null);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.context.Post(stateOfContext => failure(ex), null);
+                    }
+                },
+                null);
+
+        /// <summary>
+        /// TypeLibCollector クラスのインスタンスが GC に回収される時に呼び出されます。
+        /// </summary>
+        ~TypeLibCollector()
+        {
+            this.Dispose(false);
+        }
+
+        /// <summary>
         /// API 宣言のオブジェクトを表します。
         /// </summary>
         private static class NativeMethods
@@ -701,11 +724,19 @@ namespace TypeLibRegisterCS
             /// <summary>
             /// Searches a string using a Microsoft MS-DOS wild card match type.
             /// </summary>
-            /// <param name="pszFileParam">A pointer to a null-terminated string of maximum length MAX_PATH that contains the path to be searched.</param>
-            /// <param name="pszSpec">A pointer to a null-terminated string of maximum length MAX_PATH that contains the file type for which to search.</param>
+            /// <param name="pszFileParam">
+            /// A pointer to a null-terminated string of maximum length MAX_PATH that contains the path to
+            /// be searched.
+            /// </param>
+            /// <param name="pszSpec">
+            /// A pointer to a null-terminated string of maximum length MAX_PATH that contains the file type for
+            /// which to search.
+            /// </param>
             /// <returns>Returns TRUE if the string matches, or FALSE otherwise.</returns>
-            [DllImport("shlwapi.dll", CharSet = CharSet.Ansi, ExactSpelling = false, BestFitMapping = false, ThrowOnUnmappableChar = false, SetLastError = false)]
+            [DllImport("shlwapi.dll", CharSet = CharSet.Ansi, ExactSpelling = false, BestFitMapping = false,
+                ThrowOnUnmappableChar = false, SetLastError = false)]
             [return: MarshalAs(UnmanagedType.Bool)]
+            // ReSharper disable once MemberHidesStaticFromOuterClass
             public static extern bool PathMatchSpec([In] string pszFileParam, [In] string pszSpec);
         }
 
@@ -737,25 +768,25 @@ namespace TypeLibRegisterCS
             /// ルート情報へのパスを取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>ルート情報へのパス。既定値は null です。</para>
             /// </value>
-            public string RootPath { get; private set; }
+            public string RootPath { get; }
 
             /// <summary>
             /// カレント情報へのパスを取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>カレント情報へのパス。既定値は null です。</para>
             /// </value>
-            public string CurrentPath { get; private set; }
+            public string CurrentPath { get; }
 
             /// <summary>
             /// ルート情報の最後のサブキーを取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>ルート情報の最後のサブキー。既定値は string.Empty です。</para>
             /// </value>
             public string LastSubkeyNameOfRoot
@@ -771,7 +802,7 @@ namespace TypeLibRegisterCS
             /// カレント情報へのパスを構成するキーのコレクション取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>カレント情報へのパスを構成するキーのコレクション。既定値は要素数 0 です。</para>
             /// </value>
             public IEnumerable<string> KeyElementsOfCurrent
@@ -788,19 +819,15 @@ namespace TypeLibRegisterCS
             /// </summary>
             /// <param name="sufix">比較対象の文字列。</param>
             /// <returns>末尾が value と一致する場合は true。それ以外の場合は false。</returns>
-            public bool EndsWith(string sufix)
-            {
-                return this.CurrentPath.ToUpperInvariant().EndsWith(sufix, StringComparison.OrdinalIgnoreCase);
-            }
+            public bool EndsWith(string sufix) => this.CurrentPath.ToUpperInvariant()
+                .EndsWith(sufix, StringComparison.OrdinalIgnoreCase);
 
             /// <summary>
             /// カレント情報のレジストリ値の既定値に関連付けられている値を取得します。
             /// </summary>
             /// <returns>カレント情報のレジストリ値の既定値に関連付けられている値。見つからない場合は string.Empty。</returns>
-            public string GetValueText()
-            {
-                return (Registry.GetValue(this.CurrentPath, string.Empty, null) as string) ?? string.Empty;
-            }
+            public string GetValueText() =>
+                Registry.GetValue(this.CurrentPath, string.Empty, null) as string ?? string.Empty;
         }
     }
 }

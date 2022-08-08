@@ -27,7 +27,7 @@ namespace TypeLibRegisterCS.Extensions
         /// <param name="action">コレクションの各要素に対して実行する Action&lt;T, int&gt; デリゲート。</param>
         public static void ForEach<T>(this IEnumerable<T> instance, Action<T, int> action)
         {
-            int index = 0;
+            var index = 0;
             foreach (var item in instance)
             {
                 action(item, index++);

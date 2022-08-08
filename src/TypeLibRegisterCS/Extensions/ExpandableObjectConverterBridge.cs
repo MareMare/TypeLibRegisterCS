@@ -40,37 +40,18 @@ namespace TypeLibRegisterCS.Extensions
         }
 
         /// <summary>
-        /// ExpandableObjectConverter の対象となる型を登録します。
-        /// </summary>
-        /// <param name="converterType">ExpandableObjectConverterBridge{T} の型。</param>
-        private static void Register(Type converterType)
-        {
-            var arrtibutes = TypeDescriptor.GetAttributes(typeof(T));
-            var hasExpandableObjectConverterBridge = arrtibutes.OfType<TypeConverterAttribute>().Any((tca) => Type.GetType(tca.ConverterTypeName) == converterType);
-            if (!hasExpandableObjectConverterBridge)
-            {
-                TypeDescriptor.AddAttributes(typeof(T), new TypeConverterAttribute(converterType));
-            }
-        }
-
-        /// <summary>
         /// value パラメータに指定されたオブジェクト型のプロパティのコレクションを取得します。
         /// </summary>
         /// <param name="context">書式指定コンテキストを提供する ITypeDescriptorContext。</param>
         /// <param name="value">プロパティを取得する対象となるオブジェクトの型を指定する Object。</param>
         /// <param name="attributes">フィルタとして使用される Attribute 型の配列。</param>
         /// <returns>指定されたコンポーネントに対して公開されているプロパティを格納している PropertyDescriptorCollection。コレクションにプロパティが格納されていない場合は null。</returns>
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value,
+            Attribute[] attributes)
         {
-            if (context == null || value == null)
-            {
-                return base.GetProperties(context, value, attributes);
-            }
-
             var properties = new List<PropertyDescriptor>();
 
-            IList list = value as IList;
-            if (list != null)
+            if (value is IList list)
             {
                 for (int index = 0, count = list.Count; index < count; index++)
                 {
@@ -80,8 +61,7 @@ namespace TypeLibRegisterCS.Extensions
                 return new PropertyDescriptorCollection(properties.ToArray());
             }
 
-            IDictionary dictionary = value as IDictionary;
-            if (dictionary != null)
+            if (value is IDictionary dictionary)
             {
                 foreach (var key in dictionary.Keys)
                 {
@@ -93,6 +73,21 @@ namespace TypeLibRegisterCS.Extensions
 
             properties.AddRange(base.GetProperties(context, value, attributes).OfType<PropertyDescriptor>());
             return new PropertyDescriptorCollection(properties.ToArray());
+        }
+
+        /// <summary>
+        /// ExpandableObjectConverter の対象となる型を登録します。
+        /// </summary>
+        /// <param name="converterType">ExpandableObjectConverterBridge{T} の型。</param>
+        private static void Register(Type converterType)
+        {
+            var attributes = TypeDescriptor.GetAttributes(typeof(T));
+            var hasExpandableObjectConverterBridge = attributes.OfType<TypeConverterAttribute>()
+                .Any(tca => Type.GetType(tca.ConverterTypeName) == converterType);
+            if (!hasExpandableObjectConverterBridge)
+            {
+                TypeDescriptor.AddAttributes(typeof(T), new TypeConverterAttribute(converterType));
+            }
         }
 
         /// <summary>
@@ -115,64 +110,25 @@ namespace TypeLibRegisterCS.Extensions
             }
 
             /// <summary>
-            /// TBridge を取得します。
-            /// </summary>
-            /// <value>
-            /// 値を表す TBridge 型。
-            /// <para>TBridge 。既定値は null です。</para>
-            /// </value>
-            protected TBridge Items
-            {
-                get;
-                private set;
-            }
-
-            /// <summary>
-            /// TKey を取得します。
-            /// </summary>
-            /// <value>
-            /// 値を表す TKey 型。
-            /// <para>Key。既定値は null です。</para>
-            /// </value>
-            protected TKey Key
-            {
-                get;
-                private set;
-            }
-
-            /// <summary>
-            /// Value を取得します。
-            /// </summary>
-            /// <value>
-            /// 値を表す<see cref="object"/> 型。
-            /// <para>Value。既定値は null です。</para>
-            /// </value>
-            protected abstract object Value
-            {
-                get;
-            }
-
-            /// <summary>
             /// メンバの属性のコレクションを取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="AttributeCollection"/> 型。
+            /// 値を表す<see cref="AttributeCollection" /> 型。
             /// <para>メンバの属性のコレクション。既定値は要素数 0 です。</para>
             /// </value>
             public override AttributeCollection Attributes
             {
                 get
                 {
-                    var hasExpandebleTypeConverter = false;
+                    var hasExpendableTypeConverter = false;
                     var baseAttributes = base.Attributes;
                     var attributes = new List<Attribute>(baseAttributes.Count);
                     foreach (Attribute baseAttribute in baseAttributes)
                     {
-                        TypeConverterAttribute tca = baseAttribute as TypeConverterAttribute;
-                        if (tca != null && Type.GetType(tca.ConverterTypeName).IsSubclassOf(typeof(ExpandableObjectConverter)))
+                        if (baseAttribute is TypeConverterAttribute tca && Type.GetType(tca.ConverterTypeName)?.IsSubclassOf(typeof(ExpandableObjectConverter)) == true)
                         {
                             attributes.Add(baseAttribute);
-                            hasExpandebleTypeConverter = true;
+                            hasExpendableTypeConverter = true;
                         }
                         else
                         {
@@ -184,8 +140,8 @@ namespace TypeLibRegisterCS.Extensions
                     attributes.Add(new DescriptionAttribute(this.Description));
                     if (this.Value != null)
                     {
-                        Type valueType = this.Value.GetType();
-                        if (!hasExpandebleTypeConverter && !valueType.IsValueType && valueType != typeof(string))
+                        var valueType = this.Value.GetType();
+                        if (!hasExpendableTypeConverter && !valueType.IsValueType && valueType != typeof(string))
                         {
                             attributes.Add(new TypeConverterAttribute(typeof(ExpandableObjectConverter)));
                         }
@@ -199,67 +155,76 @@ namespace TypeLibRegisterCS.Extensions
             /// プロパティが関連付けられているコンポーネントの型を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="Type"/> 型。
+            /// 値を表す<see cref="Type" /> 型。
             /// <para>プロパティが関連付けられているコンポーネントの型。既定値は null です。</para>
             /// </value>
-            public override Type ComponentType
-            {
-                get
-                {
-                    return typeof(TBridge);
-                }
-            }
+            public override Type ComponentType => typeof(TBridge);
 
             /// <summary>
             /// プロパティが読み取り専用かどうかを示す値を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="bool"/> 型。
+            /// 値を表す<see cref="bool" /> 型。
             /// <para>プロパティが読み取り専用の場合は true。既定値は false です。</para>
             /// </value>
-            public override bool IsReadOnly
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            public override bool IsReadOnly => false;
 
             /// <summary>
             /// プロパティの型を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="Type"/> 型。
+            /// 値を表す<see cref="Type" /> 型。
             /// <para>プロパティの型。既定値は null です。</para>
             /// </value>
             public override Type PropertyType
             {
                 get
                 {
-                    object value = this.Value;
-                    return (value != null) ? value.GetType() : typeof(object);
+                    var value = this.Value;
+                    return value != null ? value.GetType() : typeof(object);
                 }
             }
+
+            /// <summary>
+            /// TBridge を取得します。
+            /// </summary>
+            /// <value>
+            /// 値を表す TBridge 型。
+            /// <para>TBridge 。既定値は null です。</para>
+            /// </value>
+            protected TBridge Items { get; }
+
+            /// <summary>
+            /// TKey を取得します。
+            /// </summary>
+            /// <value>
+            /// 値を表す TKey 型。
+            /// <para>Key。既定値は null です。</para>
+            /// </value>
+            protected TKey Key { get; }
+
+            /// <summary>
+            /// Value を取得します。
+            /// </summary>
+            /// <value>
+            /// 値を表す<see cref="object" /> 型。
+            /// <para>Value。既定値は null です。</para>
+            /// </value>
+            protected abstract object Value { get; }
 
             /// <summary>
             /// オブジェクトをリセットしたときに、そのオブジェクトの値が変化するかどうかを示す値を返します。
             /// </summary>
             /// <param name="component">リセット機能について調べる対象のコンポーネント。</param>
             /// <returns>コンポーネントをリセットするとコンポーネントの値が変化する場合は true。それ以外の場合は false。</returns>
-            public override bool CanResetValue(object component)
-            {
-                return false;
-            }
+            public override bool CanResetValue(object component) => false;
 
             /// <summary>
             /// コンポーネントのプロパティの現在の値を取得します。
             /// </summary>
             /// <param name="component">値の取得対象であるプロパティを持つコンポーネント。</param>
             /// <returns>指定したコンポーネントのプロパティの値。</returns>
-            public override object GetValue(object component)
-            {
-                return this.Value;
-            }
+            public override object GetValue(object component) => this.Value;
 
             /// <summary>
             /// コンポーネントのプロパティの値を既定値にリセットします。
@@ -283,10 +248,7 @@ namespace TypeLibRegisterCS.Extensions
             /// </summary>
             /// <param name="component">永続性について調べる対象のプロパティを持つコンポーネント。</param>
             /// <returns>プロパティを永続化する必要がある場合は true。それ以外の場合は false。</returns>
-            public override bool ShouldSerializeValue(object component)
-            {
-                return false;
-            }
+            public override bool ShouldSerializeValue(object component) => false;
         }
 
         /// <summary>
@@ -308,46 +270,29 @@ namespace TypeLibRegisterCS.Extensions
             /// メンバが属するカテゴリの名前を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>メンバが属するカテゴリの名前。既定値は "IList" です。</para>
             /// </value>
-            public override string Category
-            {
-                get
-                {
-                    return "IList";
-                }
-            }
+            public override string Category => "IList";
 
             /// <summary>
             /// メンバの説明を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>メンバの説明。既定値は string.Empty です。</para>
             /// </value>
-            public override string Description
-            {
-                get
-                {
-                    return string.Format(CultureInfo.InvariantCulture, "List item at position {0}", this.Key);
-                }
-            }
+            public override string Description =>
+                string.Format(CultureInfo.InvariantCulture, "List item at position {0}", this.Key);
 
             /// <summary>
             /// メンバの値を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="object"/> 型。
+            /// 値を表す<see cref="object" /> 型。
             /// <para>メンバの値。既定値は null です。</para>
             /// </value>
-            protected override object Value
-            {
-                get
-                {
-                    return this.Items[this.Key];
-                }
-            }
+            protected override object Value => this.Items[this.Key];
         }
 
         /// <summary>
@@ -369,46 +314,29 @@ namespace TypeLibRegisterCS.Extensions
             /// メンバが属するカテゴリの名前を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>メンバが属するカテゴリの名前。既定値は "IDictionary" です。</para>
             /// </value>
-            public override string Category
-            {
-                get
-                {
-                    return "IDictionary";
-                }
-            }
+            public override string Category => "IDictionary";
 
             /// <summary>
             /// メンバの説明を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="string"/> 型。
+            /// 値を表す<see cref="string" /> 型。
             /// <para>メンバの説明。既定値は string.Empty です。</para>
             /// </value>
-            public override string Description
-            {
-                get
-                {
-                    return string.Format(CultureInfo.InvariantCulture, "Dictionary item with key '{0}'", this.Key);
-                }
-            }
+            public override string Description =>
+                string.Format(CultureInfo.InvariantCulture, "Dictionary item with key '{0}'", this.Key);
 
             /// <summary>
             /// メンバの値を取得します。
             /// </summary>
             /// <value>
-            /// 値を表す<see cref="object"/> 型。
+            /// 値を表す<see cref="object" /> 型。
             /// <para>メンバの値。既定値は null です。</para>
             /// </value>
-            protected override object Value
-            {
-                get
-                {
-                    return this.Items[this.Key];
-                }
-            }
+            protected override object Value => this.Items[this.Key];
         }
     }
 }

@@ -9,7 +9,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Xml;
@@ -45,11 +44,11 @@ namespace TypeLibRegisterCS.Serialization
             if (File.Exists(backFilePath))
             {
                 // 読み取り専用属性があるかを調べます。
-                var attrib = File.GetAttributes(backFilePath);
-                if ((attrib & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                var attribute = File.GetAttributes(backFilePath);
+                if ((attribute & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
                 {
                     // 読み取り専用属性を削除します。
-                    File.SetAttributes(backFilePath, attrib & ~FileAttributes.ReadOnly);
+                    File.SetAttributes(backFilePath, attribute & ~FileAttributes.ReadOnly);
                 }
 
                 File.Delete(backFilePath);
@@ -74,14 +73,15 @@ namespace TypeLibRegisterCS.Serialization
         /// </param>
         /// <param name="success">非同期読み込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期読み込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        internal static void LoadAndXmlDeserializeAsync<T>(string path, Func<XmlDocument, T> deserialize, Action<T> success, Action<Exception> failure)
+        internal static void LoadAndXmlDeserializeAsync<T>(string path, Func<XmlDocument, T> deserialize,
+            Action<T> success, Action<Exception> failure)
         {
-            AsyncOperation asyncOp = AsyncOperationManager.CreateOperation(null);
+            var asyncOp = AsyncOperationManager.CreateOperation(null);
             StreamAsyncHelper.ReadAllBytesAsyncInternal(
                 path,
-                (bytes) =>
+                bytes =>
                 {
-                    T deserialized = default(T);
+                    T deserialized;
                     using (var stream = new MemoryStream(bytes))
                     {
                         var document = new XmlDocument();
@@ -91,10 +91,7 @@ namespace TypeLibRegisterCS.Serialization
 
                     asyncOp.Post(delegate { success(deserialized); }, null);
                 },
-                (exception) =>
-                {
-                    asyncOp.Post(delegate { failure(exception); }, null);
-                });
+                exception => { asyncOp.Post(delegate { failure(exception); }, null); });
         }
 
         /// <summary>
@@ -108,20 +105,18 @@ namespace TypeLibRegisterCS.Serialization
         /// </param>
         /// <param name="success">非同期読み込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期読み込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        private static void LoadAndBinaryDeserializeAsync<T>(string path, Func<byte[], T> deserialize, Action<T> success, Action<Exception> failure)
+        private static void LoadAndBinaryDeserializeAsync<T>(string path, Func<byte[], T> deserialize,
+            Action<T> success, Action<Exception> failure)
         {
-            AsyncOperation asyncOp = AsyncOperationManager.CreateOperation(null);
+            var asyncOp = AsyncOperationManager.CreateOperation(null);
             StreamAsyncHelper.ReadAllBytesAsyncInternal(
                 path,
-                (bytes) =>
+                bytes =>
                 {
-                    T deserialized = deserialize(bytes);
+                    var deserialized = deserialize(bytes);
                     asyncOp.Post(delegate { success(deserialized); }, null);
                 },
-                (exception) =>
-                {
-                    asyncOp.Post(delegate { failure(exception); }, null);
-                });
+                exception => { asyncOp.Post(delegate { failure(exception); }, null); });
         }
 
         /// <summary>
@@ -135,15 +130,16 @@ namespace TypeLibRegisterCS.Serialization
         /// </param>
         /// <param name="success">非同期書き込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期書き込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        internal static void SaveAndXmlSerializeAsync(string path, object obj, Func<object, XmlDocument> serialize, Action success, Action<Exception> failure)
+        internal static void SaveAndXmlSerializeAsync(string path, object obj, Func<object, XmlDocument> serialize,
+            Action success, Action<Exception> failure)
         {
-            AsyncOperation asyncOp = AsyncOperationManager.CreateOperation(null);
+            var asyncOp = AsyncOperationManager.CreateOperation(null);
             ThreadPool.QueueUserWorkItem(delegate
             {
-                byte[] bytes = null;
+                byte[] bytes;
                 using (var stream = new MemoryStream())
                 {
-                    XmlDocument document = serialize(obj);
+                    var document = serialize(obj);
                     document.Save(stream);
                     stream.Position = 0;
                     bytes = stream.GetBuffer();
@@ -152,11 +148,11 @@ namespace TypeLibRegisterCS.Serialization
                 StreamAsyncHelper.WriteAllBytesAsyncInternal(
                     path,
                     bytes,
-                    delegate    // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
+                    delegate // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
                     {
                         asyncOp.Post(delegate { success(); }, null);
                     },
-                    delegate(Exception exception)   // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
+                    delegate(Exception exception) // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
                     {
                         asyncOp.Post(delegate { failure(exception); }, null);
                     });
@@ -174,12 +170,13 @@ namespace TypeLibRegisterCS.Serialization
         /// </param>
         /// <param name="success">非同期書き込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期書き込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        internal static void SaveAndBinarySerializeAsync(string path, object obj, Func<object, byte[]> serialize, Action success, Action<Exception> failure)
+        internal static void SaveAndBinarySerializeAsync(string path, object obj, Func<object, byte[]> serialize,
+            Action success, Action<Exception> failure)
         {
-            AsyncOperation asyncOp = AsyncOperationManager.CreateOperation(null);
+            var asyncOp = AsyncOperationManager.CreateOperation(null);
             ThreadPool.QueueUserWorkItem(delegate
             {
-                byte[] bytes = null;
+                byte[] bytes;
                 using (var stream = new MemoryStream())
                 {
                     bytes = serialize(obj);
@@ -188,11 +185,11 @@ namespace TypeLibRegisterCS.Serialization
                 StreamAsyncHelper.WriteAllBytesAsyncInternal(
                     path,
                     bytes,
-                    delegate    // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
+                    delegate // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
                     {
                         asyncOp.Post(delegate { success(); }, null);
                     },
-                    delegate(Exception exception)   // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
+                    delegate(Exception exception) // DevPartner 静的解析対応：ラムダ式をデリゲートへ変更します。
                     {
                         asyncOp.Post(delegate { failure(exception); }, null);
                     });
@@ -246,14 +243,15 @@ namespace TypeLibRegisterCS.Serialization
         {
             try
             {
-                var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, StreamAsyncHelper.BufferSize, true);
+                var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+                    StreamAsyncHelper.BufferSize, true);
                 var output = new MemoryStream((int)input.Length);
                 StreamAsyncHelper.CopyStreamToStreamAsync(
                     input,
                     output,
-                    (error) =>
+                    error =>
                     {
-                        byte[] bytes = (error == null) ? output.GetBuffer() : null;
+                        var bytes = error == null ? output.GetBuffer() : null;
                         output.Close();
                         input.Close();
 
@@ -280,16 +278,18 @@ namespace TypeLibRegisterCS.Serialization
         /// <param name="bytes">書き込まれるバイト配列。</param>
         /// <param name="success">非同期書き込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期書き込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        private static void WriteAllBytesAsyncInternal(string path, byte[] bytes, Action success, Action<Exception> failure)
+        private static void WriteAllBytesAsyncInternal(string path, byte[] bytes, Action success,
+            Action<Exception> failure)
         {
             try
             {
                 var input = new MemoryStream(bytes);
-                var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, StreamAsyncHelper.BufferSize, true);
+                var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None,
+                    StreamAsyncHelper.BufferSize, true);
                 StreamAsyncHelper.CopyStreamToStreamAsync(
                     input,
                     output,
-                    (error) =>
+                    error =>
                     {
                         input.Close();
                         output.Close();
@@ -315,30 +315,32 @@ namespace TypeLibRegisterCS.Serialization
         /// </summary>
         /// <param name="source">コピー元のストリーム。</param>
         /// <param name="destination">コピー先のストリーム。</param>
-        /// <param name="completed">非同期操作が完了した時の処理を行うメソッドのデリゲート。
+        /// <param name="completed">
+        /// 非同期操作が完了した時の処理を行うメソッドのデリゲート。
         /// これは Action&lt;Exception&gt; である必要があります。
-        /// 正常に完了した場合は null を、例外が発生した場合はその例外を引数へ渡されます。</param>
+        /// 正常に完了した場合は null を、例外が発生した場合はその例外を引数へ渡されます。
+        /// </param>
         private static void CopyStreamToStreamAsync(Stream source, Stream destination, Action<Exception> completed)
         {
-            byte[] buffer = new byte[StreamAsyncHelper.BufferSize];
+            var buffer = new byte[StreamAsyncHelper.BufferSize];
             if (completed == null)
             {
                 completed = delegate { };
             }
 
             AsyncCallback rc = null;
-            rc = (readResult) =>
+            rc = readResult =>
             {
                 try
                 {
-                    int read = source.EndRead(readResult);
+                    var read = source.EndRead(readResult);
                     if (read > 0)
                     {
                         destination.BeginWrite(
                             buffer,
                             0,
                             read,
-                            (writeResult) =>
+                            writeResult =>
                             {
                                 try
                                 {

@@ -9,7 +9,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Xml;
 using System.Xml.Serialization;
 
 #endregion
@@ -33,7 +32,7 @@ namespace TypeLibRegisterCS.Entities
         /// レジストリのパスを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>レジストリのパス。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -44,7 +43,7 @@ namespace TypeLibRegisterCS.Entities
         /// CLSID を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>CLSID。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -55,7 +54,7 @@ namespace TypeLibRegisterCS.Entities
         /// TLBID を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>TLBID。既定値は string.Empty です。</para>
         /// </value>
         [Browsable(false)]
@@ -67,7 +66,7 @@ namespace TypeLibRegisterCS.Entities
         /// ProgID を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>ProgID。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -78,7 +77,7 @@ namespace TypeLibRegisterCS.Entities
         /// VersionIndependentProgID を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>VersionIndependentProgID。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]

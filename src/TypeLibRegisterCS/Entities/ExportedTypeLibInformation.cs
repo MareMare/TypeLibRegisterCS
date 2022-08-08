@@ -10,8 +10,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Net;
 using System.Xml.Serialization;
 using TypeLibRegisterCS.Configurations;
 
@@ -39,44 +37,32 @@ namespace TypeLibRegisterCS.Entities
         /// マシン情報を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="MachineInformation"/> 型。
+        /// 値を表す<see cref="MachineInformation" /> 型。
         /// <para>マシン情報。既定値は null です。</para>
         /// </value>
         [XmlElement("machineInfo")]
-        public MachineInformation MachineInfo
-        {
-            get;
-            set;
-        }
+        public MachineInformation MachineInfo { get; set; }
 
         /// <summary>
         /// フィルタ項目を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="FilterItem"/> 型。
+        /// 値を表す<see cref="FilterItem" /> 型。
         /// <para>フィルタ項目。既定値は null です。</para>
         /// </value>
         [XmlElement("filter", IsNullable = true)]
-        public FilterItem Filter
-        {
-            get;
-            set;
-        }
+        public FilterItem Filter { get; set; }
 
         /// <summary>
         /// TypeLibIdentifier のコレクションを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Collection{T}"/> 型。
+        /// 値を表す<see cref="Collection{T}" /> 型。
         /// <para>TypeLibIdentifier のコレクション。既定値は要素数 0 です。</para>
         /// </value>
         [XmlArray("typeLibIdentifiers")]
         [XmlArrayItem("typeLibIdentifier")]
-        public Collection<TypeLibIdentifier> TypeLibIdentifiers
-        {
-            get;
-            set;
-        }
+        public Collection<TypeLibIdentifier> TypeLibIdentifiers { get; set; }
 
         /// <summary>
         /// TypeLibIdentifier コレクションを追加します。

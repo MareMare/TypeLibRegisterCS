@@ -7,8 +7,6 @@
 
 #region References
 
-using System;
-
 #endregion
 
 namespace TypeLibRegisterCS.Configurations
