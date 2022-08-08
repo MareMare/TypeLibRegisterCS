@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Xml.Serialization;
 using TypeLibRegisterCS.Serialization;
@@ -23,7 +22,8 @@ namespace TypeLibRegisterCS.Configurations
     /// </summary>
     [Serializable]
     [XmlRoot("typeLibRegisterConfiguration")]
-    [SerializableConfiguration(SerializerMode.XmlSerializer, AppSettingKey = "TypeLibRegisterConfiguration.FilePath", ThrowIfEmpty = false)]
+    [SerializableConfiguration(SerializerMode.XmlSerializer, AppSettingKey = "TypeLibRegisterConfiguration.FilePath",
+        ThrowIfEmpty = false)]
     public class TypeLibRegisterConfiguration : ISerializableConfiguration
     {
         /// <summary>
@@ -38,16 +38,12 @@ namespace TypeLibRegisterCS.Configurations
         /// フィルタ項目のコレクションを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Collection{T}"/> 型。
+        /// 値を表す<see cref="Collection{T}" /> 型。
         /// <para>フィルタ項目のコレクション。既定値は要素数 0 です。</para>
         /// </value>
         [XmlArray("filters")]
         [XmlArrayItem("item")]
-        public Collection<FilterItem> FilterItems
-        {
-            get;
-            set;
-        }
+        public Collection<FilterItem> FilterItems { get; set; }
 
         /// <summary>
         /// 空の定義として構築します。
@@ -63,8 +59,8 @@ namespace TypeLibRegisterCS.Configurations
         /// </summary>
         public void Validate()
         {
-            var query = this.FilterItems.Where((item) => item.SearchPattern == FilterItem.All.SearchPattern);
-            if (query.Count() == 0)
+            var query = this.FilterItems.Where(item => item.SearchPattern == FilterItem.All.SearchPattern);
+            if (!query.Any())
             {
                 this.FilterItems.Insert(0, FilterItem.All);
             }

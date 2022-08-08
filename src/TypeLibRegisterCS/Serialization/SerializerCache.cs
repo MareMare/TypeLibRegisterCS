@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -20,18 +19,18 @@ using System.Xml;
 namespace TypeLibRegisterCS.Serialization
 {
     /// <summary>
-    /// <see cref="XmlSerializerHelper"/> に共通の具体的なシリアル化および逆シリアル化するオブジェクトを表します。
+    /// <see cref="XmlSerializerHelper" /> に共通の具体的なシリアル化および逆シリアル化するオブジェクトを表します。
     /// <para>このクラスは継承できません。</para>
     /// </summary>
     /// <typeparam name="TSerializer">シリアル化、逆シリアル化を行うシリアライザの型。</typeparam>
-    internal sealed class SerializerCache<TSerializer> 
+    internal sealed class SerializerCache<TSerializer>
         where TSerializer : class
     {
         /// <summary>SerializerCache&lt;TSerializer&gt; の唯一のインスタンスを表します。</summary>
-        private static readonly SerializerCache<TSerializer> singleton = new SerializerCache<TSerializer>();
+        private static readonly SerializerCache<TSerializer> Singleton = new SerializerCache<TSerializer>();
 
         /// <summary>Type に対応した TSerializer のキャッシュを表します。</summary>
-        private readonly Dictionary<Type, TSerializer> cachedSerializer = null;
+        private readonly Dictionary<Type, TSerializer> cachedSerializer;
 
         /// <summary>
         /// SerializerCache クラスの新しいインスタンスを初期化します。
@@ -45,14 +44,14 @@ namespace TypeLibRegisterCS.Serialization
         /// エントリポイントを有するアセンブリが格納されているフォルダを取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>エントリポイントを有するアセンブリが格納されているフォルダ。</para>
         /// </value>
         private static string EntryAssemblyFolder
         {
             get
             {
-                Assembly executingAssembly = Assembly.GetEntryAssembly();
+                var executingAssembly = Assembly.GetEntryAssembly();
                 return Path.GetDirectoryName(new Uri(executingAssembly.EscapedCodeBase).LocalPath);
             }
         }
@@ -71,18 +70,19 @@ namespace TypeLibRegisterCS.Serialization
         public static void Save(string filePath, object obj, Func<object, XmlDocument> serialize)
         {
             // filePath のルートがフォルダでない場合、実行時のフォルダをルートとする
-            string path = SerializerCache<TSerializer>.ResolvePath(filePath);
-            if (!Directory.Exists(Path.GetDirectoryName(path)))
+            var path = SerializerCache<TSerializer>.ResolvePath(filePath);
+            var dir = Path.GetDirectoryName(path) ?? string.Empty;
+            if (!Directory.Exists(dir))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                Directory.CreateDirectory(dir);
             }
 
             try
             {
-                string tempFilePath = Path.ChangeExtension(path, ".tmp");
-                string backFilePath = Path.ChangeExtension(path, ".bak");
+                var tempFilePath = Path.ChangeExtension(path, ".tmp");
+                var backFilePath = Path.ChangeExtension(path, ".bak");
 
-                XmlDocument document = serialize(obj);
+                var document = serialize(obj);
                 document.Save(tempFilePath);
                 StreamAsyncHelper.GenerateFile(path, tempFilePath, backFilePath);
             }
@@ -104,19 +104,21 @@ namespace TypeLibRegisterCS.Serialization
         /// </param>
         /// <param name="success">非同期書き込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期書き込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        public static void SaveAsync(string filePath, object obj, Func<object, XmlDocument> serialize, Action success, Action<Exception> failure)
+        public static void SaveAsync(string filePath, object obj, Func<object, XmlDocument> serialize, Action success,
+            Action<Exception> failure)
         {
             // filePath のルートがフォルダでない場合、実行時のフォルダをルートとする
-            string path = SerializerCache<TSerializer>.ResolvePath(filePath);
-            if (!Directory.Exists(Path.GetDirectoryName(path)))
+            var path = SerializerCache<TSerializer>.ResolvePath(filePath);
+            var dir = Path.GetDirectoryName(path) ?? string.Empty;
+            if (!Directory.Exists(dir))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                Directory.CreateDirectory(dir);
             }
 
             try
             {
-                string tempFilePath = Path.ChangeExtension(path, ".tmp");
-                string backFilePath = Path.ChangeExtension(path, ".bak");
+                var tempFilePath = Path.ChangeExtension(path, ".tmp");
+                var backFilePath = Path.ChangeExtension(path, ".bak");
 
                 StreamAsyncHelper.SaveAndXmlSerializeAsync(
                     tempFilePath,
@@ -134,10 +136,7 @@ namespace TypeLibRegisterCS.Serialization
                             failure(new SerializerException(ex));
                         }
                     },
-                    (ex) =>
-                    {
-                        failure(new SerializerException(ex));
-                    });
+                    ex => { failure(new SerializerException(ex)); });
             }
             catch (Exception ex)
             {
@@ -160,8 +159,8 @@ namespace TypeLibRegisterCS.Serialization
         {
             try
             {
-                string path = SerializerCache<TSerializer>.ResolvePath(filePath);
-                XmlDocument document = new XmlDocument();
+                var path = SerializerCache<TSerializer>.ResolvePath(filePath);
+                var document = new XmlDocument();
                 document.Load(path);
                 return deserialize(document);
             }
@@ -182,12 +181,13 @@ namespace TypeLibRegisterCS.Serialization
         /// </param>
         /// <param name="success">非同期読み込みに成功した処理を行うメソッドのデリゲート。</param>
         /// <param name="failure">非同期読み込みで例外が発生した時の処理を行うメソッドのデリゲート。</param>
-        public static void LoadAsync<T>(string filePath, Func<XmlDocument, T> deserialize, Action<T> success, Action<Exception> failure)
+        public static void LoadAsync<T>(string filePath, Func<XmlDocument, T> deserialize, Action<T> success,
+            Action<Exception> failure)
         {
             try
             {
-                string path = SerializerCache<TSerializer>.ResolvePath(filePath);
-                StreamAsyncHelper.LoadAndXmlDeserializeAsync<T>(path, deserialize, success, failure);
+                var path = SerializerCache<TSerializer>.ResolvePath(filePath);
+                StreamAsyncHelper.LoadAndXmlDeserializeAsync(path, deserialize, success, failure);
             }
             catch (Exception ex)
             {
@@ -208,20 +208,21 @@ namespace TypeLibRegisterCS.Serialization
         /// これは Action&lt;TSerializer, XmlWriter, object&gt; である必要があります。
         /// </param>
         /// <returns>シリアル化された XML ドキュメント。</returns>
-        public static XmlDocument Serialize(object obj, Func<Type, TSerializer> factory, Action<TSerializer, XmlWriter, object> serialize)
+        public static XmlDocument Serialize(object obj, Func<Type, TSerializer> factory,
+            Action<TSerializer, XmlWriter, object> serialize)
         {
-            XmlDocument document = new XmlDocument();
-            TSerializer serializer = SerializerCache<TSerializer>.GetSerializer(obj.GetType(), factory);
-            using (MemoryStream stream = new MemoryStream())
+            var document = new XmlDocument();
+            var serializer = SerializerCache<TSerializer>.GetSerializer(obj.GetType(), factory);
+            using (var stream = new MemoryStream())
             {
                 // XML ドキュメントへ出力する設定を初期化します。
-                XmlWriterSettings settings = new XmlWriterSettings();
+                var settings = new XmlWriterSettings();
                 settings.Indent = true;
                 settings.Encoding = Encoding.UTF8;
                 settings.ConformanceLevel = ConformanceLevel.Document;
 
                 // XmlWriterSettings を使用して XmlTextWriter を生成し MemoryStream を媒体として XmlDocument にシリアル化します。
-                using (XmlWriter writer = XmlTextWriter.Create(stream, settings))
+                using (var writer = XmlWriter.Create(stream, settings))
                 {
                     serialize(serializer, writer, obj);
                     writer.Flush();
@@ -252,22 +253,81 @@ namespace TypeLibRegisterCS.Serialization
         /// XML 仕様に基づき CR+LF は LF に正規化されるので空白、改行を保持するために XmlReader からの復元を行います。
         /// <para>XML 仕様については http://www.w3.org/TR/2004/REC-xml-20040204/#sec-line-ends を参照してください。</para>
         /// </remarks>
-        public static T Deserialize<T>(XmlDocument document, Func<Type, TSerializer> factory, Func<TSerializer, XmlReader, T> deserialize)
+        public static T Deserialize<T>(XmlDocument document, Func<Type, TSerializer> factory,
+            Func<TSerializer, XmlReader, T> deserialize)
         {
             // XML 仕様に基づき CR+LF は LF に正規化されるので
             // 空白、改行を保持するために XmlReader からの復元をおこなう
             // http://www.w3.org/TR/2004/REC-xml-20040204/#sec-line-ends
             document.PreserveWhitespace = true;
-            XmlReaderSettings settings = new XmlReaderSettings();
-            XmlReader reader = XmlReader.Create(new XmlNodeReader(document), settings);
-            TSerializer serializer = SerializerCache<TSerializer>.GetSerializer(typeof(T), factory);
+            var settings = new XmlReaderSettings();
+            var reader = XmlReader.Create(new XmlNodeReader(document), settings);
+            var serializer = SerializerCache<TSerializer>.GetSerializer(typeof(T), factory);
             object deserialized = deserialize(serializer, reader);
             if (deserialized == null)
             {
-                return default(T);
+                return default;
             }
 
             return (T)deserialized;
+        }
+
+        /// <summary>
+        /// 指定された XmlNode より、XmlDocument を生成します。
+        /// </summary>
+        /// <param name="xmlNode">XML ドキュメントとして作成される XmlNode 。</param>
+        /// <returns>生成された XmlDocument 。</returns>
+        internal static XmlDocument CreateXmlDocument(XmlNode xmlNode)
+        {
+            try
+            {
+                var xmldocument = new XmlDocument();
+                xmldocument.AppendChild(xmldocument.ImportNode(xmlNode, true));
+                return xmldocument;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 指定された XmlElement の XML 文字列を UTF8 形式のエンコーディングで取得します。
+        /// </summary>
+        /// <param name="element">XML 文字列を取得する XmlElement。</param>
+        /// <returns>UTF8 形式でエンコーディングされた文字列。</returns>
+        internal static string ToString(XmlElement element) =>
+            SerializerCache<TSerializer>.ToString(element, Encoding.UTF8);
+
+        /// <summary>
+        /// 指定された XmlElement の XML 文字列を 指定のエンコーディングで取得します。
+        /// </summary>
+        /// <param name="element">XML 文字列を取得される XmlElement。</param>
+        /// <param name="encoding">エンコーディングに使用される Encoding。</param>
+        /// <returns>指定エンコーディングされた文字列。</returns>
+        internal static string ToString(XmlElement element, Encoding encoding)
+        {
+            try
+            {
+                string encodedText;
+                using (var stream = new MemoryStream())
+                {
+                    // XML 文字列を取得される XmlElement を新しい XmlDocument へインポートし MemoryStream へ保存します。
+                    var dumpDoc = new XmlDocument();
+                    dumpDoc.AppendChild(dumpDoc.ImportNode(element, true));
+                    dumpDoc.Save(stream);
+
+                    // 保存された MemoryStream の先頭からバイト配列を指定のエンコードで文字列化します。
+                    stream.Position = 0;
+                    encodedText = encoding.GetString(stream.GetBuffer());
+                }
+
+                return encodedText;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         /// <summary>
@@ -279,10 +339,8 @@ namespace TypeLibRegisterCS.Serialization
         /// これは Func&lt;Type, TSerializer&gt; である必要があります。
         /// </param>
         /// <returns>取得される TSerializer。</returns>
-        private static TSerializer GetSerializer(Type type, Func<Type, TSerializer> factory)
-        {
-            return singleton.GetCachedSerializer(type, factory);
-        }
+        private static TSerializer GetSerializer(Type type, Func<Type, TSerializer> factory) =>
+            SerializerCache<TSerializer>.Singleton.GetCachedSerializer(type, factory);
 
         /// <summary>
         /// 指定したファイルパスを解決します。
@@ -301,66 +359,6 @@ namespace TypeLibRegisterCS.Serialization
             }
 
             return Path.Combine(SerializerCache<TSerializer>.EntryAssemblyFolder, filePath);
-        }
-
-        /// <summary>
-        /// 指定された XmlNode より、XmlDocument を生成します。
-        /// </summary>
-        /// <param name="xmlNode">XML ドキュメントとして作成される XmlNode 。</param>
-        /// <returns>生成された XmlDocument 。</returns>
-        internal static XmlDocument CreateXmlDocument(XmlNode xmlNode)
-        {
-            try
-            {
-                XmlDocument xmldocument = new XmlDocument();
-                xmldocument.AppendChild(xmldocument.ImportNode(xmlNode, true));
-                return xmldocument;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// 指定された XmlElement の XML 文字列を UTF8 形式のエンコーディングで取得します。
-        /// </summary>
-        /// <param name="element">XML 文字列を取得する XmlElement。</param>
-        /// <returns>UTF8 形式でエンコーディングされた文字列。</returns>
-        internal static string ToString(XmlElement element)
-        {
-            return SerializerCache<TSerializer>.ToString(element, Encoding.UTF8);
-        }
-
-        /// <summary>
-        /// 指定された XmlElement の XML 文字列を 指定のエンコーディングで取得します。
-        /// </summary>
-        /// <param name="element">XML 文字列を取得される XmlElement。</param>
-        /// <param name="encoding">エンコーディングに使用される Encoding。</param>
-        /// <returns>指定エンコーディングされた文字列。</returns>
-        internal static string ToString(XmlElement element, Encoding encoding)
-        {
-            try
-            {
-                string encodedText = String.Empty;
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    // XML 文字列を取得される XmlElement を新しい XmlDocument へインポートし MemoryStream へ保存します。
-                    XmlDocument dumpDoc = new XmlDocument();
-                    dumpDoc.AppendChild(dumpDoc.ImportNode((XmlNode)element, true));
-                    dumpDoc.Save(stream);
-
-                    // 保存された MemoryStream の先頭からバイト配列を指定のエンコードで文字列化します。
-                    stream.Position = 0;
-                    encodedText = encoding.GetString(stream.GetBuffer());
-                }
-
-                return encodedText;
-            }
-            catch
-            {
-                return string.Empty;
-            }
         }
 
         /// <summary>

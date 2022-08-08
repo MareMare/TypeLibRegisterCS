@@ -41,13 +41,9 @@ namespace TypeLibRegisterCS.Extensions
         /// 検出された例外を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Exception"/> 型。
+        /// 値を表す<see cref="Exception" /> 型。
         /// <para>検出された例外。既定値は null です。</para>
         /// </value>
-        public Exception Error
-        {
-            get;
-            private set;
-        }
+        public Exception Error { get; private set; }
     }
 }

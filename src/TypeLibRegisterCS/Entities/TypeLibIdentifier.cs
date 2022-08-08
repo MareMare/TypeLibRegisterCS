@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -42,7 +41,7 @@ namespace TypeLibRegisterCS.Entities
         /// レジストリのパスを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>レジストリのパス。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -53,7 +52,7 @@ namespace TypeLibRegisterCS.Entities
         /// TLBID を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>TLBID。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -64,7 +63,7 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリ名を取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>タイプライブラリ名。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -75,7 +74,7 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリのバージョンを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>タイプライブラリのバージョン。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -86,7 +85,7 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリのファイルパスを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>タイプライブラリのファイルパス。既定値は string.Empty です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -97,30 +96,18 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリのファイルパスが存在するかを取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="bool"/> 型。
+        /// 値を表す<see cref="bool" /> 型。
         /// <para>タイプライブラリのファイルパスが存在する場合は true。既定値は false です。</para>
         /// </value>
         [ReadOnly(true)]
         [XmlAttribute("isExistsFile")]
-        public bool IsExistsFile
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.FilePath) ? File.Exists(this.FilePath) : false;
-            }
-
-            set
-            {
-                value = !value;
-                value = !value;
-            }
-        }
+        public bool IsExistsFile => !string.IsNullOrEmpty(this.FilePath) && File.Exists(this.FilePath);
 
         /// <summary>
         /// タイプライブラリに関連する ClassIdentifier コレクションを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Collection{ClassIdentifier}"/> 型。
+        /// 値を表す<see cref="Collection{ClassIdentifier}" /> 型。
         /// <para>タイプライブラリに関連する ClassIdentifier コレクション。既定値は要素数 0 です。</para>
         /// </value>
         [Browsable(false)]
@@ -132,7 +119,7 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリに関連する InterfaceIdentifier コレクションを取得または設定します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="Collection{InterfaceIdentifier}"/> 型。
+        /// 値を表す<see cref="Collection{InterfaceIdentifier}" /> 型。
         /// <para>タイプライブラリに関連する InterfaceIdentifier コレクション。既定値は要素数 0 です。</para>
         /// </value>
         [Browsable(false)]
@@ -144,22 +131,17 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリのファイル名を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>タイプライブラリのファイル名。既定値は string.Empty です。</para>
         /// </value>
-        public string FileName
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(this.FilePath) ? Path.GetFileName(this.FilePath) : "<not found.>";
-            }
-        }
+        public string FileName =>
+            !string.IsNullOrEmpty(this.FilePath) ? Path.GetFileName(this.FilePath) : "<not found.>";
 
         /// <summary>
         /// タイプライブラリの表示名称を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>タイプライブラリの表示名称。既定値は string.Empty です。</para>
         /// </value>
         public string DisplayName
@@ -168,7 +150,7 @@ namespace TypeLibRegisterCS.Entities
             {
                 if (string.IsNullOrEmpty(this.Name))
                 {
-                    StringBuilder builder = new StringBuilder();
+                    var builder = new StringBuilder();
                     builder.AppendFormat(CultureInfo.InvariantCulture, "{0} <no name>", this.Tlbid);
                     return builder.ToString();
                 }
@@ -181,45 +163,35 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリに関連する ClassIdentifier 配列を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="ClassIdentifier"/> 型。
+        /// 値を表す<see cref="ClassIdentifier" /> 型。
         /// <para>タイプライブラリに関連する ClassIdentifier 配列。既定値は要素数 0 です。</para>
         /// </value>
         [Browsable(false)]
         [Obsolete("ウザイから未使用とします。")]
-        public IList<ClassIdentifier> ReferencedClassIdentifiers
-        {
-            get
-            {
-                return this.ClassIdentifiers
-                    .Where((identifier) => !string.IsNullOrEmpty(identifier.Clsid))
-                    .ToArray();
-            }
-        }
+        public IList<ClassIdentifier> ReferencedClassIdentifiers =>
+            this.ClassIdentifiers
+                .Where(identifier => !string.IsNullOrEmpty(identifier.Clsid))
+                .ToArray();
 
         /// <summary>
         /// タイプライブラリに関連する InterfaceIdentifier 配列を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="InterfaceIdentifier"/> 型。
+        /// 値を表す<see cref="InterfaceIdentifier" /> 型。
         /// <para>タイプライブラリに関連する InterfaceIdentifier 配列。既定値は要素数 0 です。</para>
         /// </value>
         [Browsable(false)]
         [Obsolete("ウザイから未使用とします。")]
-        public IList<InterfaceIdentifier> ReferencedInterfaceIdentifiers
-        {
-            get
-            {
-                return this.InterfaceIdentifiers
-                    .Where((identifier) => !string.IsNullOrEmpty(identifier.Iid))
-                    .ToArray();
-            }
-        }
+        public IList<InterfaceIdentifier> ReferencedInterfaceIdentifiers =>
+            this.InterfaceIdentifiers
+                .Where(identifier => !string.IsNullOrEmpty(identifier.Iid))
+                .ToArray();
 
         /// <summary>
         /// タイプライブラリに関連する ClassIdentifier コレクションが構築されているかを取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="bool"/> 型。
+        /// 値を表す<see cref="bool" /> 型。
         /// <para>タイプライブラリに関連する ClassIdentifier コレクションが構築されている場合は true。既定値は false です。</para>
         /// </value>
         [ReadOnly(true)]
@@ -230,7 +202,7 @@ namespace TypeLibRegisterCS.Entities
         /// タイプライブラリに関連する InterfaceIdentifier コレクションが構築されているかを取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="bool"/> 型。
+        /// 値を表す<see cref="bool" /> 型。
         /// <para>タイプライブラリに関連する InterfaceIdentifier コレクションが構築されている場合は true。既定値は false です。</para>
         /// </value>
         [ReadOnly(true)]

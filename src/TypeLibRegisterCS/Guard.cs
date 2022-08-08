@@ -18,7 +18,7 @@ namespace TypeLibRegisterCS
     /// 引数に異常があった場合に例外を発生させるオブジェクトを表します。
     /// <para>このクラスは継承できません。</para>
     /// </summary>
-    public sealed class Guard
+    public static class Guard
     {
         /// <summary>文字列が null または長さ 0 の文字列である場合のエラーメッセージです。</summary>
         private const string StringCannotBeEmpty = "文字列が Null、または長さ 0 の文字列 \"\" です。\r\nパラメータ名: {0}";
@@ -42,13 +42,6 @@ namespace TypeLibRegisterCS
         private const string TypeNotCompatible = "比較対象の型 '{0}' は、指定された提供される型 '{1}' へ代入できません。";
 
         /// <summary>
-        /// Guard クラスの新しいインスタンスを初期化します。
-        /// </summary>
-        private Guard()
-        {
-        }
-
-        /// <summary>
         /// 指定された文字列型の引数値が String.IsNullOrEmpty である場合 ArgumentException 例外を発生させます。
         /// </summary>
         /// <param name="argumentValue">引数の値を表す文字列。</param>
@@ -56,7 +49,7 @@ namespace TypeLibRegisterCS
         /// <exception cref="ArgumentException">文字列が Null、または長さ 0 の文字列 "" です。</exception>
         public static void ArgumentNotNullOrEmptyString(string argumentValue, string argumentName)
         {
-            if (argumentValue == null || argumentValue.Length == 0)
+            if (string.IsNullOrEmpty(argumentValue))
             {
                 throw new ArgumentException(string.Format(
                     CultureInfo.InvariantCulture,
@@ -102,7 +95,8 @@ namespace TypeLibRegisterCS
         /// <typeparam name="T">引数の値の型。</typeparam>
         /// <param name="argumentValue">引数の値。</param>
         /// <param name="argumentName">引数の名称。</param>
-        /// <param name="validate">引数値の範囲を検証するメソッドの Predicate&lt;T&gt; デリゲート。
+        /// <param name="validate">
+        /// 引数値の範囲を検証するメソッドの Predicate&lt;T&gt; デリゲート。
         /// このデリゲートに渡された値を検証し、範囲内である場合は true、それ以外の場合は false を返します。
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">指定された引数は、有効な値の範囲内にありません。</exception>
@@ -125,7 +119,8 @@ namespace TypeLibRegisterCS
         /// <typeparam name="T">引数の値の型。</typeparam>
         /// <param name="argumentValue">引数の値。</param>
         /// <param name="argumentName">引数の名称。</param>
-        /// <param name="validate">引数値の妥当性を検証するメソッドの Predicate&lt;T&gt; デリゲート。
+        /// <param name="validate">
+        /// 引数値の妥当性を検証するメソッドの Predicate&lt;T&gt; デリゲート。
         /// このデリゲートに渡された値を検証し、妥当である場合は true、それ以外の場合は false を返します。
         /// </param>
         /// <exception cref="ArgumentException">指定された引数が妥当ではありません。</exception>

@@ -25,7 +25,6 @@ namespace TypeLibRegisterCS.Configurations
         /// SerializableConfigurationException クラスの新しいインスタンスを初期化します。
         /// </summary>
         public SerializableConfigurationException()
-            : base()
         {
         }
 
@@ -53,7 +52,7 @@ namespace TypeLibRegisterCS.Configurations
         /// </summary>
         /// <param name="innerException">現在の例外の原因である例外。</param>
         public SerializableConfigurationException(Exception innerException)
-            : base((innerException != null) ? innerException.Message : string.Empty, innerException)
+            : base(innerException != null ? innerException.Message : string.Empty, innerException)
         {
         }
 

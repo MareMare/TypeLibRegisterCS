@@ -8,7 +8,6 @@
 #region References
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -23,28 +22,28 @@ namespace TypeLibRegisterCS.Extensions
     /// </summary>
     public static class EntryPoint
     {
-        /// <summary>例外が検出されたときに発生します。</summary>
-        public static event EventHandler<ThreadExceptionDetectedEventArgs> ThreadExceptionDetected;
-        
-        /// <summary>ThreadExceptionDialog のボタンが押されて消去されたときに発生します。</summary>
-        public static event EventHandler<ThreadExceptionDialogResultEventArgs> ThreadExceptionDialogResult;
-
         /// <summary>
         /// エントリポイントを有するアセンブリのファイル名 を取得します。
         /// ファイル名には拡張子も含みます。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="string"/> 型。
+        /// 値を表す<see cref="string" /> 型。
         /// <para>エントリポイントを有するアセンブリのファイル名。</para>
         /// </value>
         public static string AssemblyFileName
         {
             get
             {
-                Assembly executingAssembly = Assembly.GetEntryAssembly();
+                var executingAssembly = Assembly.GetEntryAssembly();
                 return Path.GetFileName(new Uri(executingAssembly.Location).LocalPath);
             }
         }
+
+        /// <summary>例外が検出されたときに発生します。</summary>
+        public static event EventHandler<ThreadExceptionDetectedEventArgs> ThreadExceptionDetected;
+
+        /// <summary>ThreadExceptionDialog のボタンが押されて消去されたときに発生します。</summary>
+        public static event EventHandler<ThreadExceptionDialogResultEventArgs> ThreadExceptionDialogResult;
 
         /// <summary>
         /// 多重起動を禁止としたアプリケーションを開始します。
@@ -54,8 +53,8 @@ namespace TypeLibRegisterCS.Extensions
         {
             // Mutex の新しいインスタンスを生成します。
             //var mutexName = AppDomain.CurrentDomain.FriendlyName; // Mutex の名前にアプリケーションドメイン名を付けます。
-            var mutexName = EntryPoint.AssemblyFileName;            // Mutex の名前にアセンブリファイル名を付けます。
-            using (Mutex mutex = new Mutex(false, mutexName))
+            var mutexName = EntryPoint.AssemblyFileName; // Mutex の名前にアセンブリファイル名を付けます。
+            using (var mutex = new Mutex(false, mutexName))
             {
                 // Mutex のシグナルを受信できるかどうか判断します。
                 if (mutex.WaitOne(0, false))
@@ -73,8 +72,8 @@ namespace TypeLibRegisterCS.Extensions
         {
             // アプリケーションで発生したハンドルされていない例外をキャッチするようにします。
             var domain = Thread.GetDomain();
-            domain.UnhandledException += new UnhandledExceptionEventHandler(EntryPoint.AppDomainUnhandledException);
-            Application.ThreadException += new ThreadExceptionEventHandler(EntryPoint.ApplicationThreadException);
+            domain.UnhandledException += EntryPoint.AppDomainUnhandledException;
+            Application.ThreadException += EntryPoint.ApplicationThreadException;
             try
             {
                 // アプリケーションを実行します。
@@ -87,8 +86,8 @@ namespace TypeLibRegisterCS.Extensions
             }
             finally
             {
-                Application.ThreadException -= new ThreadExceptionEventHandler(EntryPoint.ApplicationThreadException);
-                domain.UnhandledException -= new UnhandledExceptionEventHandler(EntryPoint.AppDomainUnhandledException);
+                Application.ThreadException -= EntryPoint.ApplicationThreadException;
+                domain.UnhandledException -= EntryPoint.AppDomainUnhandledException;
             }
         }
 
@@ -99,7 +98,7 @@ namespace TypeLibRegisterCS.Extensions
         /// <param name="e">イベントデータを格納している UnhandledExceptionEventArgs。</param>
         private static void AppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            var ex = (e.ExceptionObject as Exception) ?? new InvalidProgramException("ハンドルされていない例外を検出しました。");
+            var ex = e.ExceptionObject as Exception ?? new InvalidProgramException("ハンドルされていない例外を検出しました。");
             EntryPoint.OnDetected(sender, ex);
             EntryPoint.ShowThreadExceptionDialog(ex);
         }
@@ -111,7 +110,7 @@ namespace TypeLibRegisterCS.Extensions
         /// <param name="e">イベントデータを格納している ThreadExceptionEventArgs。</param>
         private static void ApplicationThreadException(object sender, ThreadExceptionEventArgs e)
         {
-            var ex = (e.Exception as Exception) ?? new InvalidProgramException("トラップされていない例外を検出しました。");
+            var ex = e.Exception ?? new InvalidProgramException("トラップされていない例外を検出しました。");
             EntryPoint.OnDetected(sender, ex);
             EntryPoint.ShowThreadExceptionDialog(ex);
         }

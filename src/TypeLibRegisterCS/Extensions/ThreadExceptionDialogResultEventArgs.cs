@@ -43,13 +43,9 @@ namespace TypeLibRegisterCS.Extensions
         /// DialogResult を取得します。
         /// </summary>
         /// <value>
-        /// 値を表す<see cref="DialogResult"/> 型。
+        /// 値を表す<see cref="DialogResult" /> 型。
         /// <para>DialogResult 。既定値は DialogResult.None です。</para>
         /// </value>
-        public DialogResult Result
-        {
-            get;
-            private set;
-        }
+        public DialogResult Result { get; private set; }
     }
 }
