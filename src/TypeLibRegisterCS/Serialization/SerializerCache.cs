@@ -52,7 +52,7 @@ namespace TypeLibRegisterCS.Serialization
             get
             {
                 var executingAssembly = Assembly.GetEntryAssembly();
-                return Path.GetDirectoryName(new Uri(executingAssembly.EscapedCodeBase).LocalPath);
+                return Path.GetDirectoryName(executingAssembly?.Location ?? string.Empty);
             }
         }
 

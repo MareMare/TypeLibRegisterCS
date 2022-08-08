@@ -47,7 +47,7 @@ namespace TypeLibRegisterCS.Configurations
             get
             {
                 var executingAssembly = Assembly.GetEntryAssembly();
-                return Path.GetDirectoryName(new Uri(executingAssembly.EscapedCodeBase).LocalPath);
+                return Path.GetDirectoryName(executingAssembly?.Location ?? string.Empty);
             }
         }
 
@@ -227,7 +227,7 @@ namespace TypeLibRegisterCS.Configurations
         private static T CreateAsEmpty()
         {
             var config = (T)Activator.CreateInstance(typeof(T), true);
-            config.ConstructAsEmpty();
+            config!.ConstructAsEmpty();
             return config;
         }
 

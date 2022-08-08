@@ -122,6 +122,9 @@ dotnet_diagnostic.SA1642.severity = none
 # SA1643: Destructor summary documentation should begin with standard text
 dotnet_diagnostic.SA1643.severity = none
 
+# CA1416: プラットフォームの互換性を検証
+dotnet_diagnostic.CA1416.severity = none
+
 [*.vb]
 #### 命名スタイル ####
 
